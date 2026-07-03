@@ -5,6 +5,7 @@ export interface NewsStore {
   saveNews(news: NewsItem[]): void
   getRecentNews(hours: number, limit?: number, offset?: number): NewsItem[]
   getHotNews(hours: number, limit?: number, offset?: number): NewsItem[]
+  cleanupOldNews(days: number): number
   close(): void
 }
 
@@ -112,6 +113,13 @@ export function createStorage(dbPath: string): NewsStore {
       }
 
       return (db.prepare(sql).all(...params) as Record<string, unknown>[]).map(rowToNewsItem)
+    },
+
+    cleanupOldNews(days: number): number {
+      const cutoff = new Date(Date.now() - days * 24 * 3600 * 1000)
+      const cutoffStr = cutoff.toLocaleString('sv-SE', { timeZone: 'Asia/Shanghai' }).replace('T', ' ')
+      const result = db.prepare('DELETE FROM news WHERE time < ?').run(cutoffStr)
+      return result.changes
     },
 
     close() {

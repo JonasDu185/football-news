@@ -73,6 +73,12 @@ app.get('/{*splat}', (_req, res) => {
   res.sendFile(path.join(DIST_PATH, 'index.html'))
 })
 
+// 每天凌晨 3 点清理 7 天前的旧新闻
+cron.schedule('0 3 * * *', () => {
+  const deleted = store.cleanupOldNews(7)
+  if (deleted > 0) console.log(`[cleanup] 清理了 ${deleted} 条旧新闻`)
+})
+
 // #9 修复：优雅关闭，保存数据库
 function shutdown(signal: string) {
   console.log(`[server] 收到 ${signal}，正在关闭...`)
