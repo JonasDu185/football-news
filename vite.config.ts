@@ -5,6 +5,7 @@ import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/football/',
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
@@ -13,7 +14,6 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      // 开发时把 /api 请求转发给后端 Express
       '/api': 'http://localhost:3001',
     },
   },

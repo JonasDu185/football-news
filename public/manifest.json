@@ -2,7 +2,7 @@
   "name": "足球新闻 - Football News",
   "short_name": "足球新闻",
   "description": "中文足球新闻聚合 · 每日精选与热点追踪",
-  "start_url": "/",
+  "start_url": "/football/",
   "display": "standalone",
   "background_color": "#0B1121",
   "theme_color": "#0B1121",
