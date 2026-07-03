@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs'
 import { Skeleton } from './components/ui/skeleton'
 import { Button } from './components/ui/button'
 import { useNews } from './hooks/useNews'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { NewsItem } from './lib/newsFilter'
 
 function useToday() {
@@ -44,6 +44,18 @@ function App() {
   const today = useToday()
   const { featured, hot, loading, error, hasMore, loadingMore, loadMore, retry } = useNews()
   const [reading, setReading] = useState<NewsItem | null>(null)
+  const [worldcupFilter, setWorldcupFilter] = useState(true) // true=世界杯, false=其他
+
+  // 每日精选按世界杯/其他拆分
+  const { worldcupNews, otherNews } = useMemo(() => {
+    const wc: NewsItem[] = []
+    const other: NewsItem[] = []
+    for (const n of featured) {
+      if (n.tags.includes('世界杯')) wc.push(n)
+      else other.push(n)
+    }
+    return { worldcupNews: wc, otherNews: other }
+  }, [featured])
 
   const handleRefresh = useCallback(async () => {
     await fetch('/api/news/refresh', { method: 'POST' })
@@ -88,7 +100,7 @@ function App() {
           </TabsList>
         </div>
 
-        <TabsContent value="featured" className="mt-4">
+        <TabsContent value="featured" className="mt-2">
           {loading ? (
             <NewsSkeleton />
           ) : error ? (
@@ -100,7 +112,32 @@ function App() {
             </div>
           ) : (
             <>
-              <NewsList news={featured} onCardClick={openReader} />
+              {/* 世界杯 / 其他赛事 子标签 — 下划线式 */}
+              <div className="flex justify-center gap-6 px-4 mb-3">
+                <button
+                  type="button"
+                  onClick={() => setWorldcupFilter(true)}
+                  className={`text-sm pb-1.5 transition-colors border-b-2 ${
+                    worldcupFilter
+                      ? 'text-foreground border-primary'
+                      : 'text-muted-foreground border-transparent hover:text-foreground'
+                  }`}
+                >
+                  世界杯
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWorldcupFilter(false)}
+                  className={`text-sm pb-1.5 transition-colors border-b-2 ${
+                    !worldcupFilter
+                      ? 'text-foreground border-primary'
+                      : 'text-muted-foreground border-transparent hover:text-foreground'
+                  }`}
+                >
+                  其他赛事
+                </button>
+              </div>
+              <NewsList news={worldcupFilter ? worldcupNews : otherNews} onCardClick={openReader} />
               {hasMore && <LoadMoreSentinel loading={loadingMore} onLoadMore={loadMore} />}
             </>
           )}
