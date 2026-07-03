@@ -70,7 +70,7 @@ function App() {
   const sourceUrl = reading && reading.fallbackUrl && reading.url ? reading.url : null
 
   return (
-    <div className="min-h-screen bg-background max-w-md mx-auto border-x border-border relative overflow-x-hidden">
+    <div className="min-h-screen bg-background max-w-md mx-auto relative overflow-x-hidden">
       {/* 列表页——始终渲染，阅读模式下隐藏但保留 DOM 和滚动位置 */}
       <div className={reading ? 'hidden' : ''}>
         <DateHeader date={today} />

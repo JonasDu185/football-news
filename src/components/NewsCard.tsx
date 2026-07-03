@@ -34,7 +34,7 @@ export function NewsCard({ news, onClick }: NewsCardProps) {
         {displayTags.length > 0 && (
           <div className="flex gap-1.5 mb-2">
             {displayTags.map((tag) => (
-              <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0">
+              <Badge key={tag} variant="outline" className="text-[10px] px-1.5 py-0 border-foreground/25">
                 {tag}
               </Badge>
             ))}

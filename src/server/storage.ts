@@ -39,6 +39,7 @@ export function createStorage(dbPath: string): NewsStore {
     VALUES (@title, @time, @source, @thumb, @url, @fallbackUrl, @count, @tags)
     ON CONFLICT(url) DO UPDATE SET
       title = excluded.title,
+      source = COALESCE(excluded.source, news.source),
       thumb = COALESCE(excluded.thumb, news.thumb),
       fallback_url = COALESCE(excluded.fallback_url, news.fallback_url),
       count = MAX(excluded.count, news.count),
