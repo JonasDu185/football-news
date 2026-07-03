@@ -21,7 +21,7 @@ export function DateHeader({ date }: DateHeaderProps) {
           {/* 右侧内容区 */}
           <div className="flex-1 min-w-0 relative">
             {/* 足球水印 */}
-            <span className="absolute -right-1 -top-1 text-[80px] leading-none opacity-[0.03] select-none pointer-events-none" aria-hidden="true">⚽</span>
+            <span className="absolute -right-1 -top-1 text-[80px] leading-none opacity-75 select-none pointer-events-none" aria-hidden="true">⚽</span>
             {/* 日期文字 */}
             <div className="px-4 py-3 relative">
               <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-1">

@@ -3,7 +3,7 @@
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
     /* 字体：标题衬线体，正文无衬线体 */
@@ -51,61 +51,55 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* ── 看台主题 ── */
+/* ── 看台主题 · 纸票（浅色） ── */
 :root {
-    /* 浅色模式也用暗色（专为深色阅读设计） */
-    --background: oklch(0.15 0.02 255);
-    /* #0B1121 墨蓝 */
-    --foreground: oklch(0.93 0.01 255);
-    /* #E8EDF5 粉笔白 */
-    --card: oklch(0.22 0.03 255);
-    /* #1A2744 午夜蓝 */
-    --card-foreground: oklch(0.93 0.01 255);
-    /* 粉笔白 */
-    --popover: oklch(0.22 0.03 255);
-    --popover-foreground: oklch(0.93 0.01 255);
+    --background: oklch(0.97 0.01 85);
+    /* #F7F3ED 票根纸暖白 */
+    --foreground: oklch(0.15 0.01 85);
+    /* #1A1A1A 油墨黑 */
+    --card: oklch(0.995 0 85);
+    /* #FFFFFF 白卡片 */
+    --card-foreground: oklch(0.15 0.01 85);
+    --popover: oklch(0.995 0 85);
+    --popover-foreground: oklch(0.15 0.01 85);
     --primary: oklch(0.58 0.22 28);
-    /* #E6482E 哨红 */
+    /* #E6482E 哨红 — 不变 */
     --primary-foreground: oklch(0.99 0 0);
-    /* 白色 */
-    --secondary: oklch(0.24 0.03 255);
-    /* #243356 钢蓝 */
-    --secondary-foreground: oklch(0.93 0.01 255);
-    --muted: oklch(0.22 0.03 255);
-    --muted-foreground: oklch(0.62 0.03 255);
-    /* #8899B4 锡灰 */
+    /* 白字 */
+    --secondary: oklch(0.94 0.01 85);
+    /* #E5E0D8 暖灰底 */
+    --secondary-foreground: oklch(0.15 0.01 85);
+    --muted: oklch(0.94 0.01 85);
+    --muted-foreground: oklch(0.55 0.01 85);
+    /* #8B8580 暖灰字 */
     --accent: oklch(0.58 0.22 28);
     /* 哨红 */
     --accent-foreground: oklch(0.99 0 0);
     --destructive: oklch(0.58 0.25 28);
-    --border: oklch(0.24 0.03 255);
-    /* 钢蓝 */
-    --input: oklch(0.24 0.03 255);
+    --border: oklch(0.89 0.015 85);
+    /* 淡暖灰边框 */
+    --input: oklch(0.94 0.01 85);
     --ring: oklch(0.58 0.22 28);
     /* 哨红光环 */
     --chart-1: oklch(0.58 0.22 28);
-    /* 哨红 */
-    --chart-2: oklch(0.62 0.03 255);
-    /* 锡灰 */
-    --chart-3: oklch(0.22 0.03 255);
-    /* 午夜蓝 */
-    --chart-4: oklch(0.24 0.03 255);
-    /* 钢蓝 */
-    --chart-5: oklch(0.15 0.02 255);
-    /* 墨蓝 */
+    --chart-2: oklch(0.55 0.01 85);
+    --chart-3: oklch(0.94 0.01 85);
+    --chart-4: oklch(0.89 0.015 85);
+    --chart-5: oklch(0.97 0.01 85);
     --radius: 0.5rem;
-    --sidebar: oklch(0.15 0.02 255);
-    --sidebar-foreground: oklch(0.93 0.01 255);
+    --sidebar: oklch(0.97 0.01 85);
+    --sidebar-foreground: oklch(0.15 0.01 85);
     --sidebar-primary: oklch(0.58 0.22 28);
     --sidebar-primary-foreground: oklch(0.99 0 0);
-    --sidebar-accent: oklch(0.22 0.03 255);
-    --sidebar-accent-foreground: oklch(0.93 0.01 255);
-    --sidebar-border: oklch(0.24 0.03 255);
+    --sidebar-accent: oklch(0.94 0.01 85);
+    --sidebar-accent-foreground: oklch(0.15 0.01 85);
+    --sidebar-border: oklch(0.89 0.015 85);
     --sidebar-ring: oklch(0.58 0.22 28);
 }
 
-.dark {
-    /* 深色模式与浅色保持一致（核心体验即暗色） */
+/* ── 看台主题 · 球场夜（深色）─ 跟随系统自动切换 ── */
+@media (prefers-color-scheme: dark) {
+  :root {
     --background: oklch(0.15 0.02 255);
     --foreground: oklch(0.93 0.01 255);
     --card: oklch(0.22 0.03 255);
@@ -137,6 +131,7 @@
     --sidebar-accent-foreground: oklch(0.93 0.01 255);
     --sidebar-border: oklch(0.24 0.03 255);
     --sidebar-ring: oklch(0.58 0.22 28);
+  }
 }
 
 @layer base {
