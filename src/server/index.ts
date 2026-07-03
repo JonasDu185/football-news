@@ -50,10 +50,21 @@ app.get('/api/news/hot', (req, res) => {
   res.json(news)
 })
 
-// 手动刷新：下拉触发，立刻抓取最新数据
+// 手动刷新
 app.post('/api/news/refresh', async (_req, res) => {
   await fetchAndStore()
   res.json({ ok: true })
+})
+
+// 文章阅读模式：提取原文正文
+app.get('/api/news/article', async (req, res) => {
+  const url = req.query.url as string
+  if (!url) {
+    res.status(400).json({ error: '缺少 url 参数' })
+    return
+  }
+  const article = await (await import('./reader')).extractArticle(url)
+  res.json(article)
 })
 
 // ===== 生产环境托管前端静态文件 =====

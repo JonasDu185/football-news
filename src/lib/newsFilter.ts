@@ -24,6 +24,42 @@ export interface NewsItem {
   tags: string[]
 }
 
+// 从 URL 域名提取可读的来源名
+function guessSourceName(url: string | undefined): string | null {
+  if (!url) return null
+  try {
+    const host = new URL(url.startsWith('http') ? url : `https://${url}`).hostname
+    // 去掉 www. 前缀
+    const name = host.replace(/^www\./, '')
+    // 知名域名映射
+    const KNOWN: Record<string, string> = {
+      'x.com': 'Twitter',
+      'twitter.com': 'Twitter',
+      'instagram.com': 'Instagram',
+      'youtube.com': 'YouTube',
+      'facebook.com': 'Facebook',
+      'weibo.com': '微博',
+      'bbc.com': 'BBC',
+      'bbc.co.uk': 'BBC',
+      'nytimes.com': '纽约时报',
+      'theguardian.com': '卫报',
+      'marca.com': '马卡报',
+      'as.com': '阿斯报',
+      'espn.com': 'ESPN',
+      'mirror.co.uk': '镜报',
+      'thesun.co.uk': '太阳报',
+      'dailymail.co.uk': '每日邮报',
+      'skysports.com': '天空体育',
+      'goal.com': 'GOAL',
+      'transfermarkt.com': '转会市场',
+      'fifa.com': 'FIFA',
+    }
+    return KNOWN[name] || name
+  } catch {
+    return null
+  }
+}
+
 function buildZhibo8Url(item: RawNewsItem): string | null {
   if (!item.url) return null
   return item.url.startsWith('http') ? item.url : `https://news.zhibo8.com${item.url}`
@@ -52,7 +88,11 @@ export function filterFootballNews(raw: RawNewsItem[]): NewsItem[] {
       return {
         title: item.shortTitle || item.title,
         time: item.createtime,
-        source: item.from_name ?? '直播吧',
+        // 来源名：from_name 有值且不是默认的"直播吧"时直接用；
+        // 如果 from_name 缺失或只是"直播吧"，但从外链能推断出域名，则用推断结果
+        source:
+          (item.from_name && item.from_name !== '直播吧') ? item.from_name
+          : guessSourceName(item.from_url) || item.from_name || '直播吧',
         thumb: item.thumbnail ?? null,
         // 主链接：优先外媒原文；备用链接：直播吧（且只在主链接不是直播吧时才有意义）
         url: sourceUrl,

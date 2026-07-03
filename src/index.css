@@ -153,3 +153,29 @@
     @apply font-medium tracking-tight;
   }
 }
+
+/* 阅读模式内容样式 */
+.reader-content p {
+  margin-bottom: 1em;
+  line-height: 1.8;
+}
+.reader-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1em 0;
+}
+.reader-content a {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+.reader-content blockquote {
+  border-left: 3px solid var(--color-primary);
+  padding-left: 1em;
+  margin: 1em 0;
+  color: var(--color-muted-foreground);
+}
+.reader-content h2, .reader-content h3 {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}

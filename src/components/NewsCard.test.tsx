@@ -38,10 +38,16 @@ describe('NewsCard', () => {
     expect(container.querySelector('img')).not.toBeNull()
   })
 
-  it('点击时跳转原文，新窗口打开', () => {
-    render(<NewsCard news={sampleNews} />)
-    const link = screen.getByRole('link')
-    expect(link).toHaveAttribute('href', 'https://news.zhibo8.com/123')
-    expect(link).toHaveAttribute('target', '_blank')
+  it('点击卡片触发 onClick 回调', () => {
+    let clicked = false
+    render(<NewsCard news={sampleNews} onClick={() => { clicked = true }} />)
+    const btn = screen.getByRole('button')
+    btn.click()
+    expect(clicked).toBe(true)
+  })
+
+  it('没有 onClick 时渲染为普通 div', () => {
+    const { container } = render(<NewsCard news={sampleNews} />)
+    expect(container.querySelector('button')).toBeNull()
   })
 })

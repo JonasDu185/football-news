@@ -1,11 +1,13 @@
 import { DateHeader } from './components/DateHeader'
 import { NewsList } from './components/NewsList'
+import { ReaderView } from './components/ReaderView'
 import { PullToRefresh } from './components/PullToRefresh'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs'
 import { Skeleton } from './components/ui/skeleton'
 import { Button } from './components/ui/button'
 import { useNews } from './hooks/useNews'
 import { useState, useEffect, useCallback } from 'react'
+import type { NewsItem } from './lib/newsFilter'
 
 function useToday() {
   const [today, setToday] = useState(() => new Date())
@@ -40,11 +42,26 @@ function NewsSkeleton() {
 function App() {
   const today = useToday()
   const { featured, hot, loading, error, hasMore, loadingMore, loadMore, retry } = useNews()
+  const [reading, setReading] = useState<NewsItem | null>(null)
 
   const handleRefresh = useCallback(async () => {
     await fetch('/api/news/refresh', { method: 'POST' })
     retry()
   }, [retry])
+
+  // 阅读模式：优先用直播吧自己的文章，外媒原文作为底部参考链接
+  if (reading) {
+    const mainUrl = reading.fallbackUrl || reading.url || ''
+    const sourceUrl = reading.fallbackUrl && reading.url ? reading.url : null
+    return (
+      <ReaderView
+        url={mainUrl}
+        sourceUrl={sourceUrl}
+        sourceName={reading.source}
+        onBack={() => setReading(null)}
+      />
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background max-w-md mx-auto border-x border-border">
@@ -75,7 +92,7 @@ function App() {
             </div>
           ) : (
             <>
-              <NewsList news={featured} />
+              <NewsList news={featured} onCardClick={setReading} />
               {hasMore && (
                 <div className="px-4 pt-2 pb-8">
                   <Button
@@ -104,7 +121,7 @@ function App() {
             </div>
           ) : (
             <>
-              <NewsList news={hot} />
+              <NewsList news={hot} onCardClick={setReading} />
               {hasMore && (
                 <div className="px-4 pt-2 pb-8">
                   <Button
