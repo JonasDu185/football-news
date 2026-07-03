@@ -43,6 +43,7 @@
     "concurrently": "^10.0.3",
     "jsdom": "^27.0.1",
     "oxlint": "^1.69.0",
+    "sharp": "^0.35.3",
     "tailwindcss": "^4.3.2",
     "tsx": "^4.22.4",
     "typescript": "~6.0.2",

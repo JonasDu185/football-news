@@ -9,6 +9,8 @@ const sampleNews: NewsItem = {
   source: '直播吧',
   thumb: null,
   url: 'https://news.zhibo8.com/123',
+  fallbackUrl: null,
+  count: 6000000,
   tags: ['足球', '世界杯', '德国'],
 }
 
@@ -31,7 +33,7 @@ describe('NewsCard', () => {
   })
 
   it('有缩略图时渲染图片', () => {
-    const withThumb: NewsItem = { ...sampleNews, thumb: 'https://example.com/photo.jpg' }
+    const withThumb: NewsItem = { ...sampleNews, thumb: 'https://example.com/photo.jpg', fallbackUrl: 'https://news.zhibo8.com/fallback' }
     const { container } = render(<NewsCard news={withThumb} />)
     expect(container.querySelector('img')).not.toBeNull()
   })

@@ -10,6 +10,8 @@ const sampleNews: NewsItem[] = [
     source: '直播吧',
     thumb: null,
     url: 'https://example.com/1',
+    fallbackUrl: null,
+    count: 0,
     tags: ['足球', '世界杯'],
   },
   {
@@ -18,6 +20,8 @@ const sampleNews: NewsItem[] = [
     source: '直播吧',
     thumb: 'https://example.com/thumb.jpg',
     url: 'https://example.com/2',
+    fallbackUrl: null,
+    count: 0,
     tags: ['足球', '世界杯'],
   },
 ]
