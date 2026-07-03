@@ -93,7 +93,10 @@ export function filterFootballNews(raw: RawNewsItem[]): NewsItem[] {
         source:
           (item.from_name && item.from_name !== '直播吧') ? item.from_name
           : guessSourceName(item.from_url) || item.from_name || '直播吧',
-        thumb: item.thumbnail ?? null,
+        // HTTPS + 去 _thumb 换大图
+        thumb: item.thumbnail
+          ? item.thumbnail.replace(/^http:\/\//, 'https://').replace(/_thumb(?=\.\w+$)/, '')
+          : null,
         // 主链接：优先外媒原文；备用链接：直播吧（且只在主链接不是直播吧时才有意义）
         url: sourceUrl,
         fallbackUrl: sourceUrl !== zhibo8Url ? zhibo8Url : null,

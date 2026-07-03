@@ -26,6 +26,7 @@ export function NewsCard({ news, onClick }: NewsCardProps) {
             alt=""
             className="w-full h-full object-cover"
             loading="lazy"
+            referrerPolicy="no-referrer"
             onError={() => setImgError(true)}
           />
         </div>
