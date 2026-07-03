@@ -12,26 +12,32 @@ function makeSample(): NewsItem[] {
   return [
     {
       title: '德国点球出局',
-      time: timeStr(-2),  // 2 小时前
+      time: timeStr(-2),
       source: '直播吧',
       thumb: null,
       url: 'https://news.zhibo8.com/1',
+      fallbackUrl: null,
+      count: 6000099,
       tags: ['足球', '世界杯', '德国'],
     },
     {
       title: '巴西绝杀日本',
-      time: timeStr(-6),  // 6 小时前
+      time: timeStr(-6),
       source: '直播吧',
       thumb: 'https://example.com/brazil.jpg',
       url: 'https://news.zhibo8.com/2',
+      fallbackUrl: null,
+      count: 6000050,
       tags: ['足球', '世界杯', '巴西'],
     },
     {
       title: '摩洛哥淘汰荷兰',
-      time: timeStr(-10), // 10 小时前
+      time: timeStr(-10),
       source: '直播吧',
       thumb: null,
       url: 'https://news.zhibo8.com/3',
+      fallbackUrl: null,
+      count: 5999999,
       tags: ['足球', '世界杯', '摩洛哥'],
     },
   ]
@@ -95,6 +101,8 @@ describe('storage', () => {
       source: '直播吧',
       thumb: 'https://example.com/new-thumb.jpg',
       url: 'https://news.zhibo8.com/1',
+      fallbackUrl: null,
+      count: 6000099,
       tags: ['足球', '世界杯', '德国'],
     }
     store.saveNews([updated])

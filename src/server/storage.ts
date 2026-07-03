@@ -4,6 +4,7 @@ import type { NewsItem } from '../lib/newsFilter'
 export interface NewsStore {
   saveNews(news: NewsItem[]): void
   getRecentNews(hours: number, limit?: number, offset?: number): NewsItem[]
+  getHotNews(hours: number, limit?: number, offset?: number): NewsItem[]
   close(): void
 }
 
@@ -22,6 +23,8 @@ export function createStorage(dbPath: string): NewsStore {
       source TEXT NOT NULL DEFAULT '直播吧',
       thumb TEXT,
       url TEXT UNIQUE,
+      fallback_url TEXT,
+      count INTEGER NOT NULL DEFAULT 0,
       tags TEXT NOT NULL DEFAULT '[]',
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
@@ -31,11 +34,13 @@ export function createStorage(dbPath: string): NewsStore {
 
   // 准备语句，提升性能
   const insertStmt = db.prepare(`
-    INSERT INTO news (title, time, source, thumb, url, tags)
-    VALUES (@title, @time, @source, @thumb, @url, @tags)
+    INSERT INTO news (title, time, source, thumb, url, fallback_url, count, tags)
+    VALUES (@title, @time, @source, @thumb, @url, @fallbackUrl, @count, @tags)
     ON CONFLICT(url) DO UPDATE SET
       title = excluded.title,
       thumb = COALESCE(excluded.thumb, news.thumb),
+      fallback_url = COALESCE(excluded.fallback_url, news.fallback_url),
+      count = MAX(excluded.count, news.count),
       tags = excluded.tags,
       time = excluded.time
   `)
@@ -50,6 +55,8 @@ export function createStorage(dbPath: string): NewsStore {
             source: item.source,
             thumb: item.thumb,
             url: item.url,
+            fallbackUrl: item.fallbackUrl,
+            count: item.count,
             tags: JSON.stringify(item.tags),
           })
         }
@@ -64,10 +71,34 @@ export function createStorage(dbPath: string): NewsStore {
       const cutoffStr = cutoff.toLocaleString('sv-SE', { timeZone: 'Asia/Shanghai' }).replace('T', ' ')
 
       let sql = `
-        SELECT title, time, source, thumb, url, tags
+        SELECT title, time, source, thumb, url, fallback_url, count, tags
         FROM news
         WHERE time >= ?
         ORDER BY time DESC
+      `
+      const params: (string | number)[] = [cutoffStr]
+
+      if (limit !== undefined) {
+        sql += ' LIMIT ?'
+        params.push(limit)
+      }
+      if (offset !== undefined) {
+        sql += ' OFFSET ?'
+        params.push(offset)
+      }
+
+      return (db.prepare(sql).all(...params) as Record<string, unknown>[]).map(rowToNewsItem)
+    },
+
+    getHotNews(hours: number, limit?: number, offset?: number): NewsItem[] {
+      const cutoff = new Date(Date.now() - hours * 3600 * 1000)
+      const cutoffStr = cutoff.toLocaleString('sv-SE', { timeZone: 'Asia/Shanghai' }).replace('T', ' ')
+
+      let sql = `
+        SELECT title, time, source, thumb, url, fallback_url, count, tags
+        FROM news
+        WHERE time >= ?
+        ORDER BY count DESC
       `
       const params: (string | number)[] = [cutoffStr]
 
@@ -104,6 +135,8 @@ function rowToNewsItem(row: Record<string, unknown>): NewsItem {
     source: (row.source as string) || '直播吧',
     thumb: (row.thumb as string) || null,
     url: (row.url as string) || null,
+    fallbackUrl: (row.fallback_url as string) || null,
+    count: (row.count as number) || 0,
     tags,
   }
 }

@@ -43,9 +43,10 @@ app.get('/api/news/featured', (req, res) => {
 })
 
 app.get('/api/news/hot', (req, res) => {
-  const limit = Math.min(Number(req.query.limit) || 20, 50)
+  const limit = Math.min(Number(req.query.limit) || 15, 50)
   const offset = Number(req.query.offset) || 0
-  const news = store.getRecentNews(72, limit, offset)
+  // 近期热点：最近 72 小时，按热度排序
+  const news = store.getHotNews(72, limit, offset)
   res.json(news)
 })
 
