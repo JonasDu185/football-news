@@ -2,15 +2,6 @@ import { JSDOM } from 'jsdom'
 import { Readability } from '@mozilla/readability'
 
 const MAX_BODY_SIZE = 5 * 1024 * 1024 // 5MB
-const ALLOWED_DOMAINS = [
-  'zhibo8.com', 'news.zhibo8.com', 'm.zhibo8.com',
-  'x.com', 'twitter.com',
-  'bbc.com', 'bbc.co.uk',
-  'espn.com', 'marca.com', 'as.com',
-  'mirror.co.uk', 'thesun.co.uk', 'dailymail.co.uk',
-  'nytimes.com', 'theguardian.com',
-  'weibo.com', 'instagram.com', 'youtube.com',
-]
 
 // 检查是否为私有/内网 IP
 function isPrivateIP(hostname: string): boolean {
@@ -102,9 +93,28 @@ export async function extractArticle(url: string): Promise<Article> {
       return { title: '', content: '', excerpt: null, byline: null, error: '无法解析文章' }
     }
 
+    // 补充视频：Readability 会丢弃 video 标签，从原始 HTML 找回
+    let extraContent = ''
+    const videoEl = doc.window.document.querySelector('video')
+    if (videoEl) {
+      const src = videoEl.getAttribute('src')
+      if (src) {
+        const poster = videoEl.getAttribute('poster')
+        extraContent = `<p><video controls preload="metadata" src="${src}"${poster ? ` poster="${poster}"` : ''} style="max-width:100%;height:auto;border-radius:0.5rem"></video></p>`
+      } else {
+        // 视频是 JS 动态加载的，提示用户在浏览器中打开
+        extraContent = `<p style="color:var(--color-muted-foreground);font-size:0.875rem;text-align:center;padding:2em 0">📺 本文包含视频内容<br><a href="${safeUrl}" target="_blank" rel="noopener noreferrer" style="color:var(--color-primary)">在浏览器中打开查看</a></p>`
+      }
+    }
+
+    // 去掉无用的装饰图片（播放按钮图标等）
+    let content = article.content || ''
+    content = content.replace(/<img[^>]*video_play[^>]*>/gi, '')
+    content = content.replace(/<img[^>]*\/ico\/[^>]*>/gi, '')
+
     return {
       title: article.title || '',
-      content: article.content || '',
+      content: content + extraContent,
       excerpt: article.excerpt || null,
       byline: article.byline || null,
       error: null,

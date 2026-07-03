@@ -25,8 +25,8 @@ export function ReaderView({ url, sourceUrl, sourceName, onBack }: ReaderViewPro
   const cleanContent = useMemo(() => {
     if (!article?.content) return ''
     const sanitized = DOMPurify.sanitize(article.content, {
-      ALLOWED_TAGS: ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'img', 'a', 'ul', 'ol', 'li', 'blockquote', 'pre', 'code', 'strong', 'em', 'br', 'figure', 'figcaption'],
-      ALLOWED_ATTR: ['src', 'alt', 'href', 'target', 'rel', 'loading', 'referrerpolicy'],
+      ALLOWED_TAGS: ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'img', 'video', 'source', 'a', 'ul', 'ol', 'li', 'blockquote', 'pre', 'code', 'strong', 'em', 'br', 'figure', 'figcaption'],
+      ALLOWED_ATTR: ['src', 'alt', 'href', 'target', 'rel', 'loading', 'referrerpolicy', 'controls', 'preload', 'poster', 'style'],
     })
     // 给所有 img 加上 referrerpolicy="no-referrer"，绕过 CDN 防盗链
     return sanitized.replace(/<img /g, '<img referrerpolicy="no-referrer" loading="lazy" ')
@@ -53,24 +53,13 @@ export function ReaderView({ url, sourceUrl, sourceName, onBack }: ReaderViewPro
   }, [url])
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-full bg-background">
       {/* 顶栏 */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border">
         <div className="flex items-center gap-2 px-4 py-3">
           <Button variant="ghost" size="icon" className="size-8" onClick={onBack}>
             <ArrowLeftIcon className="size-4" />
           </Button>
-          <span className="text-sm text-muted-foreground flex-1 truncate">阅读模式</span>
-          {/* 原文链接 */}
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
-          >
-            <ExternalLinkIcon className="size-3" />
-            原文
-          </a>
         </div>
       </div>
 

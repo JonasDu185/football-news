@@ -1,6 +1,7 @@
 import { DateHeader } from './components/DateHeader'
 import { NewsList } from './components/NewsList'
 import { ReaderView } from './components/ReaderView'
+import { LoadMoreSentinel } from './components/LoadMoreSentinel'
 import { PullToRefresh } from './components/PullToRefresh'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs'
 import { Skeleton } from './components/ui/skeleton'
@@ -49,23 +50,30 @@ function App() {
     retry()
   }, [retry])
 
-  // 阅读模式：优先用直播吧自己的文章，外媒原文作为底部参考链接
-  if (reading) {
-    const mainUrl = reading.fallbackUrl || reading.url || ''
-    const sourceUrl = reading.fallbackUrl && reading.url ? reading.url : null
-    return (
-      <ReaderView
-        url={mainUrl}
-        sourceUrl={sourceUrl}
-        sourceName={reading.source}
-        onBack={() => setReading(null)}
-      />
-    )
-  }
+  // 打开阅读模式：推一条浏览器历史，让返回键能回退
+  const openReader = useCallback((item: NewsItem) => {
+    window.history.pushState({ reader: true }, '')
+    setReading(item)
+  }, [])
+
+  // 监听系统返回键 / 侧滑手势
+  useEffect(() => {
+    const handler = () => {
+      if (reading) setReading(null)
+    }
+    window.addEventListener('popstate', handler)
+    return () => window.removeEventListener('popstate', handler)
+  }, [reading])
+
+  // 阅读模式
+  const mainUrl = reading ? (reading.fallbackUrl || reading.url || '') : ''
+  const sourceUrl = reading && reading.fallbackUrl && reading.url ? reading.url : null
 
   return (
-    <div className="min-h-screen bg-background max-w-md mx-auto border-x border-border">
-      <DateHeader date={today} />
+    <div className="min-h-screen bg-background max-w-md mx-auto border-x border-border relative overflow-x-hidden">
+      {/* 列表页——始终渲染，阅读模式下隐藏但保留 DOM 和滚动位置 */}
+      <div className={reading ? 'hidden' : ''}>
+        <DateHeader date={today} />
 
       <PullToRefresh onRefresh={handleRefresh}>
         <Tabs defaultValue="featured" className="mt-4">
@@ -92,19 +100,8 @@ function App() {
             </div>
           ) : (
             <>
-              <NewsList news={featured} onCardClick={setReading} />
-              {hasMore && (
-                <div className="px-4 pt-2 pb-8">
-                  <Button
-                    variant="ghost"
-                    className="w-full text-muted-foreground"
-                    onClick={loadMore}
-                    disabled={loadingMore}
-                  >
-                    {loadingMore ? '加载中...' : '加载更多'}
-                  </Button>
-                </div>
-              )}
+              <NewsList news={featured} onCardClick={openReader} />
+              {hasMore && <LoadMoreSentinel loading={loadingMore} onLoadMore={loadMore} />}
             </>
           )}
         </TabsContent>
@@ -121,24 +118,26 @@ function App() {
             </div>
           ) : (
             <>
-              <NewsList news={hot} onCardClick={setReading} />
-              {hasMore && (
-                <div className="px-4 pt-2 pb-8">
-                  <Button
-                    variant="ghost"
-                    className="w-full text-muted-foreground"
-                    onClick={loadMore}
-                    disabled={loadingMore}
-                  >
-                    {loadingMore ? '加载中...' : '加载更多'}
-                  </Button>
-                </div>
-              )}
+              <NewsList news={hot} onCardClick={openReader} />
+              {hasMore && <LoadMoreSentinel loading={loadingMore} onLoadMore={loadMore} />}
             </>
           )}
         </TabsContent>
       </Tabs>
       </PullToRefresh>
+      </div>
+
+      {/* 阅读模式——覆盖在列表页上方 */}
+      {reading && (
+        <div className="absolute inset-0 bg-background z-20">
+          <ReaderView
+            url={mainUrl}
+            sourceUrl={sourceUrl}
+            sourceName={reading.source}
+            onBack={() => window.history.back()}
+          />
+        </div>
+      )}
     </div>
   )
 }
