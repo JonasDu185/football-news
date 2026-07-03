@@ -77,12 +77,12 @@ function App() {
 
       <PullToRefresh onRefresh={handleRefresh}>
         <Tabs defaultValue="featured" className="mt-4">
-          <div className="sticky top-[72px] z-10 bg-background/95 backdrop-blur px-4 py-2">
+          <div className="sticky top-[120px] z-10 bg-background/95 backdrop-blur px-4 py-2">
             <TabsList className="w-full h-10">
-            <TabsTrigger value="featured" className="flex-1 text-sm">
+            <TabsTrigger value="featured" className="flex-1 text-sm relative data-active:text-foreground data-active:after:absolute data-active:after:bottom-0 data-active:after:left-1/4 data-active:after:w-1/2 data-active:after:h-0.5 data-active:after:bg-primary data-active:after:rounded-full">
               每日精选
             </TabsTrigger>
-            <TabsTrigger value="hot" className="flex-1 text-sm">
+            <TabsTrigger value="hot" className="flex-1 text-sm relative data-active:text-foreground data-active:after:absolute data-active:after:bottom-0 data-active:after:left-1/4 data-active:after:w-1/2 data-active:after:h-0.5 data-active:after:bg-primary data-active:after:rounded-full">
               近期热点
             </TabsTrigger>
           </TabsList>
@@ -118,7 +118,7 @@ function App() {
             </div>
           ) : (
             <>
-              <NewsList news={hot} onCardClick={openReader} />
+              <NewsList news={hot} onCardClick={openReader} showFeatured />
               {hasMore && <LoadMoreSentinel loading={loadingMore} onLoadMore={loadMore} />}
             </>
           )}

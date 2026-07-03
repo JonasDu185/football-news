@@ -93,7 +93,7 @@ export function ReaderView({ url, sourceUrl, sourceName, onBack }: ReaderViewPro
             )}
             <h1 className="text-xl font-bold text-foreground font-heading mb-4">{article.title}</h1>
             <div
-              className="text-foreground/85 leading-relaxed text-[15px] reader-content"
+              className="text-foreground/85 leading-relaxed text-[17px] reader-content"
               dangerouslySetInnerHTML={{ __html: cleanContent }}
             />
             {/* 底部：原文链接 */}

@@ -12,22 +12,39 @@ export function DateHeader({ date }: DateHeaderProps) {
 
   return (
     <header role="banner" className="sticky top-0 z-10 bg-background/95 backdrop-blur">
-      <div className="flex items-center justify-between px-5 py-4">
-        <div>
-          <p className="text-xs tracking-widest text-muted-foreground mb-1">
-            <time dateTime={fullDate}>{date.getFullYear()}</time>
-          </p>
-          <p className="font-heading text-4xl font-bold text-foreground tracking-tight">
-            {month}.{day}
-          </p>
-        </div>
-        <div className="text-right">
-          <span className="block text-lg text-muted-foreground font-medium">{weekDay}</span>
-          {/* 哨红圆点 — 像比赛日的标记 */}
-          <span className="inline-block w-2 h-2 rounded-full bg-primary mt-1" aria-hidden="true" />
+      {/* 票根卡片 */}
+      <div className="mx-4 mt-4 rounded-t-2xl bg-card border border-border border-b-0 overflow-hidden">
+        <div className="flex">
+          {/* 左侧哨红 — 贯穿整个卡片 */}
+          <div className="w-1.5 shrink-0 bg-primary" aria-hidden="true" />
+
+          {/* 右侧内容区 */}
+          <div className="flex-1 min-w-0">
+            {/* 日期文字 */}
+            <div className="px-4 py-3">
+              <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-1">
+                <time dateTime={fullDate}>{date.getFullYear()}</time>
+              </p>
+              <p className="font-heading text-4xl font-bold tracking-tight text-foreground leading-none">
+                {month}.{day}
+              </p>
+              <p className="text-sm text-foreground/70 mt-1 font-medium">{weekDay}</p>
+            </div>
+
+            {/* 穿孔撕扯线 — 圆从红条右侧开始 */}
+            <div className="h-[16px] overflow-hidden" aria-hidden="true">
+              <div
+                className="w-full h-full"
+                style={{
+                  backgroundImage: 'radial-gradient(circle 5px at 5px 100%, var(--color-background) 5px, transparent 5px)',
+                  backgroundSize: '15px 16px',
+                  backgroundRepeat: 'repeat-x',
+                }}
+              />
+            </div>
+          </div>
         </div>
       </div>
-      <div className="mx-5 border-t border-border" />
     </header>
   )
 }

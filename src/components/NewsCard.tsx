@@ -6,9 +6,11 @@ import { Badge } from '@/components/ui/badge'
 interface NewsCardProps {
   news: NewsItem
   onClick?: () => void
+  index?: number
+  featured?: boolean
 }
 
-export function NewsCard({ news, onClick }: NewsCardProps) {
+export function NewsCard({ news, onClick, index = 0, featured = false }: NewsCardProps) {
   const [imgError, setImgError] = useState(false)
 
   const displayTags = news.tags
@@ -18,7 +20,16 @@ export function NewsCard({ news, onClick }: NewsCardProps) {
   const timeStr = news.time.length >= 16 ? news.time.slice(11, 16) : news.time
 
   const content = (
-    <Card className="overflow-hidden border-border/50 bg-card hover:bg-secondary/30 transition-colors cursor-pointer">
+    <Card
+      className="overflow-hidden border-border/50 bg-card hover:bg-secondary/30 transition-colors cursor-pointer card-enter relative"
+      style={{ animationDelay: `${index * 60}ms` }}
+    >
+      {/* 精选徽章 */}
+      {featured && (
+        <span className="absolute top-2 right-2 z-10 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wide">
+          精选
+        </span>
+      )}
       {news.thumb && !imgError && (
         <div className="relative w-full h-36 overflow-hidden bg-muted">
           <img
