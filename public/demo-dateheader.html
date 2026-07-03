@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>票根方案对比</title>
+<style>
+  body {
+    margin: 0;
+    padding: 16px;
+    background: #0B1121;
+    color: #E8EDF5;
+    font-family: system-ui, sans-serif;
+    max-width: 448px;
+    margin: 0 auto;
+  }
+  h2 {
+    font-size: 13px;
+    color: #8899B4;
+    margin: 24px 0 8px;
+    padding-left: 16px;
+  }
+  .card {
+    margin: 0 16px 16px;
+    border-radius: 16px 16px 0 0;
+    background: #1A2744;
+    border: 1px solid #243356;
+    border-bottom: none;
+    overflow: hidden;
+  }
+  .card-body {
+    display: flex;
+  }
+  .stripe {
+    width: 6px;
+    flex-shrink: 0;
+    background: #E6482E;
+  }
+  .content {
+    flex: 1;
+    padding: 16px 20px;
+  }
+  .year {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #8899B4;
+    margin-bottom: 4px;
+  }
+  .date {
+    font-family: 'PingFang SC', 'Noto Serif SC', serif;
+    font-size: 48px;
+    font-weight: bold;
+    line-height: 1;
+  }
+  .weekday {
+    font-size: 14px;
+    color: #E8EDF5;
+    opacity: 0.7;
+    margin-top: 6px;
+  }
+  .perf {
+    height: 16px;
+    overflow: hidden;
+  }
+  .perf-inner {
+    width: 100%;
+    height: 100%;
+    background-image: radial-gradient(circle 5px at 5px 100%, #0B1121 5px, transparent 5px);
+    background-size: 15px 16px;
+    background-repeat: repeat-x;
+  }
+
+  /* A - emoji */
+  .extra-emoji { font-size: 28px; position: absolute; right: 16px; top: 20px; }
+  /* B - stripe texture */
+  .texture { background-image: repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.01) 2px, rgba(255,255,255,0.01) 4px); }
+  /* C - subtitle */
+  .subtitle { font-size: 11px; color: #E6482E; font-weight: 600; margin-top: 4px; letter-spacing: 0.1em; }
+  /* D - watermark */
+  .watermark { position: relative; }
+  .watermark::after { content: '⚽'; position: absolute; right: 12px; top: 12px; font-size: 64px; opacity: 0.04; pointer-events: none; }
+  /* E - badge */
+  .tag { display: inline-block; font-size: 10px; background: #E6482E; color: #fff; padding: 2px 8px; border-radius: 999px; font-weight: bold; letter-spacing: 0.1em; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<h2>A · 日期右边加足球图标</h2>
+<div class="card">
+  <div class="card-body" style="position:relative">
+    <div class="stripe"></div>
+    <div class="content">
+      <div class="year">2026</div>
+      <div class="date" style="font-size:40px;padding-right:40px">7.3</div>
+      <div class="weekday">周四</div>
+      <span class="extra-emoji">⚽</span>
+    </div>
+  </div>
+  <div class="perf"><div class="perf-inner"></div></div>
+</div>
+
+<h2>B · 球衣斜纹纹理</h2>
+<div class="card texture">
+  <div class="card-body">
+    <div class="stripe"></div>
+    <div class="content">
+      <div class="year">2026</div>
+      <div class="date">7.3</div>
+      <div class="weekday">周四</div>
+    </div>
+  </div>
+  <div class="perf"><div class="perf-inner"></div></div>
+</div>
+
+<h2>C · 日期下加小字副标题</h2>
+<div class="card">
+  <div class="card-body">
+    <div class="stripe"></div>
+    <div class="content">
+      <div class="year">2026</div>
+      <div class="date">7.3</div>
+      <div class="subtitle">足球新闻 · 每日精选</div>
+      <div class="weekday">周四</div>
+    </div>
+  </div>
+  <div class="perf"><div class="perf-inner"></div></div>
+</div>
+
+<h2>D · 淡色足球水印背景</h2>
+<div class="card watermark">
+  <div class="card-body">
+    <div class="stripe"></div>
+    <div class="content">
+      <div class="year">2026</div>
+      <div class="date">7.3</div>
+      <div class="weekday">周四</div>
+    </div>
+  </div>
+  <div class="perf"><div class="perf-inner"></div></div>
+</div>
+
+<h2>E · 「比赛日」小标签</h2>
+<div class="card">
+  <div class="card-body">
+    <div class="stripe"></div>
+    <div class="content">
+      <div class="year">2026</div>
+      <div class="date" style="font-size:40px;padding-right:60px">7.3</div>
+      <span class="tag">比赛日</span>
+      <div class="weekday">周四</div>
+    </div>
+  </div>
+  <div class="perf"><div class="perf-inner"></div></div>
+</div>
+
+<h2>当前原版（不改动，对比参考）</h2>
+<div class="card">
+  <div class="card-body">
+    <div class="stripe"></div>
+    <div class="content">
+      <div class="year">2026</div>
+      <div class="date">7.3</div>
+      <div class="weekday">周四</div>
+    </div>
+  </div>
+  <div class="perf"><div class="perf-inner"></div></div>
+</div>
+
+</body>
+</html>
