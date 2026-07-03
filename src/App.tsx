@@ -40,11 +40,34 @@ function NewsSkeleton() {
   )
 }
 
+// 已读记录 hook — 持久化到 localStorage
+function useReadHistory() {
+  const [readUrls, setReadUrls] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem('football-read')
+      return new Set(saved ? JSON.parse(saved) : [])
+    } catch { return new Set() }
+  })
+
+  const markRead = useCallback((url: string | null) => {
+    if (!url) return
+    setReadUrls((prev) => {
+      const next = new Set(prev)
+      next.add(url)
+      localStorage.setItem('football-read', JSON.stringify([...next]))
+      return next
+    })
+  }, [])
+
+  return { readUrls, markRead }
+}
+
 function App() {
   const today = useToday()
   const { featured, hot, loading, error, hasMore, loadingMore, loadMore, retry } = useNews()
   const [reading, setReading] = useState<NewsItem | null>(null)
-  const [worldcupFilter, setWorldcupFilter] = useState(true) // true=世界杯, false=其他
+  const [worldcupFilter, setWorldcupFilter] = useState(true)
+  const { readUrls, markRead } = useReadHistory()
 
   // 每日精选按世界杯/其他拆分
   const { worldcupNews, otherNews } = useMemo(() => {
@@ -64,9 +87,10 @@ function App() {
 
   // 打开阅读模式：推一条浏览器历史，让返回键能回退
   const openReader = useCallback((item: NewsItem) => {
+    markRead(item.url)
     window.history.pushState({ reader: true }, '')
     setReading(item)
-  }, [])
+  }, [markRead])
 
   // 监听系统返回键 / 侧滑手势
   useEffect(() => {
@@ -137,7 +161,7 @@ function App() {
                   其他赛事
                 </button>
               </div>
-              <NewsList news={worldcupFilter ? worldcupNews : otherNews} onCardClick={openReader} />
+              <NewsList news={worldcupFilter ? worldcupNews : otherNews} onCardClick={openReader} readUrls={readUrls} />
               {hasMore && <LoadMoreSentinel loading={loadingMore} onLoadMore={loadMore} />}
             </>
           )}

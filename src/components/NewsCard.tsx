@@ -8,9 +8,10 @@ interface NewsCardProps {
   onClick?: () => void
   index?: number
   featured?: boolean
+  isRead?: boolean
 }
 
-export function NewsCard({ news, onClick, index = 0, featured = false }: NewsCardProps) {
+export function NewsCard({ news, onClick, index = 0, featured = false, isRead = false }: NewsCardProps) {
   const [imgError, setImgError] = useState(false)
 
   const displayTags = news.tags
@@ -59,6 +60,7 @@ export function NewsCard({ news, onClick, index = 0, featured = false }: NewsCar
           <span className="font-medium text-foreground/70">{news.source}</span>
           <span aria-hidden="true">·</span>
           <time dateTime={news.time}>{timeStr}</time>
+            {isRead && <span className="text-[10px] text-muted-foreground/50 ml-auto">已读</span>}
         </div>
       </CardContent>
     </Card>
