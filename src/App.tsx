@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs'
 import { Skeleton } from './components/ui/skeleton'
 import { Button } from './components/ui/button'
 import { useNews } from './hooks/useNews'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import type { NewsItem } from './lib/newsFilter'
 
 function useToday() {
@@ -67,7 +67,49 @@ function App() {
   const { featured, hot, loading, error, hasMore, loadingMore, loadMore, retry } = useNews()
   const [reading, setReading] = useState<NewsItem | null>(null)
   const [worldcupFilter, setWorldcupFilter] = useState(true)
+  const [activeTab, setActiveTab] = useState('featured')  // 控制 Tabs 组件，配合横向滑动切换
   const { readUrls, markRead } = useReadHistory()
+
+  // 横向滑动切换标签：世界杯 → 其他赛事 → 近期热点 → 循环
+  const touchStartX = useRef(0)
+  const touchStartY = useRef(0)
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
+  }, [])
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (reading) return  // 阅读模式下不触发
+    const endX = e.changedTouches[0].clientX
+    const endY = e.changedTouches[0].clientY
+    const dx = endX - touchStartX.current
+    const dy = endY - touchStartY.current
+    // 水平滑动且幅度足够大，且水平位移大于垂直位移（避免上下滚动误触发）
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
+      if (dx < 0) {
+        // 左滑 → 下一个标签
+        if (activeTab === 'featured' && worldcupFilter) {
+          setWorldcupFilter(false)  // 世界杯 → 其他赛事
+        } else if (activeTab === 'featured' && !worldcupFilter) {
+          setActiveTab('hot')  // 其他赛事 → 近期热点
+        } else {
+          setActiveTab('featured')
+          setWorldcupFilter(true)  // 近期热点 → 世界杯
+        }
+      } else {
+        // 右滑 → 上一个标签
+        if (activeTab === 'featured' && worldcupFilter) {
+          setActiveTab('hot')  // 世界杯 ← 近期热点
+        } else if (activeTab === 'featured' && !worldcupFilter) {
+          setWorldcupFilter(true)  // 其他赛事 ← 世界杯
+        } else {
+          setActiveTab('featured')
+          setWorldcupFilter(false)  // 近期热点 ← 其他赛事
+        }
+      }
+    }
+  }, [reading, activeTab, worldcupFilter])
 
   // 每日精选按世界杯/其他拆分
   const { worldcupNews, otherNews } = useMemo(() => {
@@ -116,13 +158,17 @@ function App() {
   const sourceUrl = reading && reading.fallbackUrl && reading.url ? reading.url : null
 
   return (
-    <div className="min-h-screen bg-background max-w-md mx-auto relative overflow-x-hidden">
+    <div
+      className="min-h-screen bg-background max-w-md mx-auto relative overflow-x-hidden"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* 列表页——始终保留在文档流中，阅读模式下不隐藏（fixed 覆盖层盖住它） */}
       <div>
         <DateHeader date={today} />
 
       <PullToRefresh onRefresh={handleRefresh}>
-        <Tabs defaultValue="featured" className="mt-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
           <div className="sticky top-[120px] z-10 bg-background/95 backdrop-blur px-4 py-2">
             <TabsList className="w-full h-10">
             <TabsTrigger value="featured" className="flex-1 text-sm relative data-active:text-foreground data-active:after:absolute data-active:after:bottom-0 data-active:after:left-1/4 data-active:after:w-1/2 data-active:after:h-0.5 data-active:after:bg-primary data-active:after:rounded-full">
