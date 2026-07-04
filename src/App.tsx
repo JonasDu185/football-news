@@ -92,6 +92,16 @@ function App() {
     setReading(item)
   }, [markRead])
 
+  // 阅读模式时锁定 body 滚动，防止列表在背后滚动（列表始终保持 DOM 和滚动位置不变）
+  useEffect(() => {
+    if (reading) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [reading])
+
   // 监听系统返回键 / 侧滑手势
   useEffect(() => {
     const handler = () => {
@@ -107,8 +117,8 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background max-w-md mx-auto relative overflow-x-hidden">
-      {/* 列表页——始终渲染，阅读模式下隐藏但保留 DOM 和滚动位置 */}
-      <div className={reading ? 'hidden' : ''}>
+      {/* 列表页——始终保留在文档流中，阅读模式下不隐藏（fixed 覆盖层盖住它） */}
+      <div>
         <DateHeader date={today} />
 
       <PullToRefresh onRefresh={handleRefresh}>
@@ -188,15 +198,17 @@ function App() {
       </PullToRefresh>
       </div>
 
-      {/* 阅读模式——覆盖在列表页上方 */}
+      {/* 阅读模式——fixed 覆盖整个视口，不依赖父级定位，列表滚动位置自然保留 */}
       {reading && (
-        <div className="absolute inset-0 bg-background z-20">
-          <ReaderView
-            url={mainUrl}
-            sourceUrl={sourceUrl}
-            sourceName={reading.source}
-            onBack={() => window.history.back()}
-          />
+        <div className="fixed inset-0 z-20 bg-background flex justify-center overflow-y-auto">
+          <div className="w-full max-w-md">
+            <ReaderView
+              url={mainUrl}
+              sourceUrl={sourceUrl}
+              sourceName={reading.source}
+              onBack={() => window.history.back()}
+            />
+          </div>
         </div>
       )}
     </div>
