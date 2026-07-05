@@ -34,7 +34,7 @@ export function NewsCard({ news, onClick, index = 0, featured = false, isRead = 
   const content = (
     <div ref={cardRef}>
       <Card
-        className={`overflow-hidden border-border/50 bg-card hover:bg-secondary/30 transition-colors cursor-pointer relative ${compact ? '!pt-0 !gap-1 !pb-0' : ''}`}
+        className={`overflow-hidden border-border/50 bg-card hover:bg-secondary/30 transition-colors cursor-pointer relative !rounded-md ${compact ? '!pt-0 !gap-1 !pb-0' : ''}`}
       >
       {/* 精选徽章 */}
       {featured && (
@@ -43,7 +43,7 @@ export function NewsCard({ news, onClick, index = 0, featured = false, isRead = 
         </span>
       )}
       {news.thumb && !imgError && (
-        <div className={`relative w-full overflow-hidden bg-muted ${compact ? 'max-h-48 rounded-t-xl' : 'h-36'}`}>
+        <div className={`relative w-full overflow-hidden bg-muted ${compact ? 'max-h-48 rounded-t-md' : 'h-36'}`}>
           <img
             src={news.thumb}
             alt=""

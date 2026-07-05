@@ -23,14 +23,14 @@ export function DateHeader({ date }: DateHeaderProps) {
             {/* 足球水印 */}
             <span className="absolute -right-1 -top-1 text-[80px] leading-none opacity-75 select-none pointer-events-none" aria-hidden="true">⚽</span>
             {/* 日期文字 */}
-            <div className="px-4 py-3 relative">
-              <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-1">
+            <div className="px-4 pt-1.5 pb-0.5 relative">
+              <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-0.5">
                 <time dateTime={fullDate}>{date.getFullYear()}</time>
               </p>
               <p className="font-heading text-4xl font-bold tracking-tight text-foreground leading-none">
                 {month}.{day}
               </p>
-              <p className="text-sm text-foreground/70 mt-1 font-medium">{weekDay}</p>
+              <p className="text-sm text-foreground/70 font-medium">{weekDay}</p>
             </div>
 
             {/* 穿孔撕扯线 — 圆从红条右侧开始 */}

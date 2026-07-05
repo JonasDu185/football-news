@@ -31,8 +31,8 @@ export function NewsList({ news, onCardClick, showFeatured = false, readUrls, co
 
   if (columns === 2) {
     return (
-      <div className="flex gap-3 px-4">
-        <div className="flex-1 flex flex-col gap-3">
+      <div className="flex gap-1.5 px-4">
+        <div className="flex-1 flex flex-col gap-1.5">
           {leftItems.map((item, i) => (
             <NewsCard
               key={`${item.url ?? i}-${item.title}`}
@@ -45,7 +45,7 @@ export function NewsList({ news, onCardClick, showFeatured = false, readUrls, co
             />
           ))}
         </div>
-        <div className="flex-1 flex flex-col gap-3">
+        <div className="flex-1 flex flex-col gap-1.5">
           {rightItems.map((item, i) => (
             <NewsCard
               key={`${item.url ?? i}-${item.title}`}
