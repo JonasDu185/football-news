@@ -2,6 +2,7 @@ import { useState, useLayoutEffect, useRef } from 'react'
 import type { NewsItem } from '@/lib/newsFilter'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { BookmarkButton } from './BookmarkButton'
 
 interface NewsCardProps {
   news: NewsItem
@@ -9,11 +10,13 @@ interface NewsCardProps {
   index?: number
   featured?: boolean
   isRead?: boolean
+  isBookmarked?: boolean
+  onToggleBookmark?: (item: NewsItem) => void
   /** 紧凑模式：双列瀑布流使用，缩略图自然比例 + 更小字号 */
   compact?: boolean
 }
 
-export function NewsCard({ news, onClick, index = 0, featured = false, isRead = false, compact = false }: NewsCardProps) {
+export function NewsCard({ news, onClick, index = 0, featured = false, isRead = false, isBookmarked = false, onToggleBookmark, compact = false }: NewsCardProps) {
   const [imgError, setImgError] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
 
@@ -41,6 +44,14 @@ export function NewsCard({ news, onClick, index = 0, featured = false, isRead = 
         <span className={`absolute z-10 bg-primary text-primary-foreground font-bold rounded-full tracking-wide ${compact ? 'top-1 right-1 text-[8px] px-1.5 py-0.5' : 'top-2 right-2 text-[10px] px-2 py-0.5'}`}>
           精选
         </span>
+      )}
+      {/* 收藏按钮 */}
+      {onToggleBookmark && (
+        <BookmarkButton
+          isBookmarked={isBookmarked}
+          compact={compact}
+          onClick={() => onToggleBookmark(news)}
+        />
       )}
       {news.thumb && !imgError && (
         <div className={`relative w-full overflow-hidden bg-muted ${compact ? 'max-h-48 rounded-t-md' : 'h-36'}`}>

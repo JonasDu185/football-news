@@ -56,14 +56,15 @@ app.post('/api/news/refresh', async (_req, res) => {
   res.json({ ok: true })
 })
 
-// 文章阅读模式：提取原文正文
+// 文章阅读模式：提取原文正文（带缓存）
 app.get('/api/news/article', async (req, res) => {
   const url = req.query.url as string
   if (!url) {
     res.status(400).json({ error: '缺少 url 参数' })
     return
   }
-  const article = await (await import('./reader')).extractArticle(url)
+  const { getArticle } = await import('./articleCache')
+  const article = await getArticle(url, store)
   res.json(article)
 })
 
@@ -73,10 +74,13 @@ app.get('/{*splat}', (_req, res) => {
   res.sendFile(path.join(DIST_PATH, 'index.html'))
 })
 
-// 每天凌晨 3 点清理 7 天前的旧新闻
+// 每天凌晨 3 点清理 7 天前的旧新闻和缓存文章
 cron.schedule('0 3 * * *', () => {
-  const deleted = store.cleanupOldNews(7)
-  if (deleted > 0) console.log(`[cleanup] 清理了 ${deleted} 条旧新闻`)
+  const deletedNews = store.cleanupOldNews(7)
+  const deletedArticles = store.cleanupOldArticles(7)
+  if (deletedNews > 0 || deletedArticles > 0) {
+    console.log(`[cleanup] 清理了 ${deletedNews} 条旧新闻，${deletedArticles} 篇缓存文章`)
+  }
 })
 
 // #9 修复：优雅关闭，保存数据库

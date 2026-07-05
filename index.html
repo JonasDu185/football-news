@@ -8,6 +8,19 @@
     <meta name="description" content="中文足球新闻聚合 · 每日精选与热点追踪" />
     <link rel="manifest" href="/manifest.json" />
     <title>足球新闻</title>
+    <!-- 深色模式防闪烁：在 React 加载前读取 localStorage -->
+    <script>
+      (function() {
+        var theme = localStorage.getItem('football-theme');
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else if (theme === 'light') {
+          document.documentElement.classList.add('light');
+        } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

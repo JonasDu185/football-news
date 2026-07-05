@@ -9,7 +9,21 @@ export interface NewsStore {
   close(): void
 }
 
-export function createStorage(dbPath: string): NewsStore {
+/** 缓存的文章 */
+export interface CachedArticle {
+  title: string
+  content: string
+  excerpt: string | null
+  byline: string | null
+}
+
+export interface ArticleCacheStore {
+  getCachedArticle(url: string): CachedArticle | null
+  cacheArticle(url: string, article: CachedArticle): void
+  cleanupOldArticles(days: number): number
+}
+
+export function createStorage(dbPath: string): NewsStore & ArticleCacheStore {
   const db = new Database(dbPath)
 
   // 启用 WAL 模式提升并发性能
@@ -31,6 +45,17 @@ export function createStorage(dbPath: string): NewsStore {
     );
     -- #21 修复：time 列索引，避免全表扫描
     CREATE INDEX IF NOT EXISTS idx_news_time ON news(time);
+
+    -- 文章正文缓存表
+    CREATE TABLE IF NOT EXISTS article_cache (
+      url TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      excerpt TEXT,
+      byline TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_article_cache_created ON article_cache(created_at);
   `)
 
   // 准备语句，提升性能
@@ -125,6 +150,33 @@ export function createStorage(dbPath: string): NewsStore {
 
     close() {
       db.close()
+    },
+
+    // ===== 文章缓存 =====
+
+    getCachedArticle(url: string): CachedArticle | null {
+      const row = db.prepare('SELECT title, content, excerpt, byline FROM article_cache WHERE url = ?').get(url) as Record<string, unknown> | undefined
+      if (!row) return null
+      return {
+        title: row.title as string,
+        content: row.content as string,
+        excerpt: (row.excerpt as string) || null,
+        byline: (row.byline as string) || null,
+      }
+    },
+
+    cacheArticle(url: string, article: CachedArticle): void {
+      db.prepare(`
+        INSERT OR REPLACE INTO article_cache (url, title, content, excerpt, byline)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(url, article.title, article.content, article.excerpt, article.byline)
+    },
+
+    cleanupOldArticles(days: number): number {
+      const cutoff = new Date(Date.now() - days * 24 * 3600 * 1000)
+      const cutoffStr = cutoff.toLocaleString('sv-SE', { timeZone: 'Asia/Shanghai' }).replace('T', ' ')
+      const result = db.prepare('DELETE FROM article_cache WHERE created_at < ?').run(cutoffStr)
+      return result.changes
     },
   }
 }

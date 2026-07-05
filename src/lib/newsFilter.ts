@@ -105,3 +105,13 @@ export function filterFootballNews(raw: RawNewsItem[]): NewsItem[] {
       }
     })
 }
+
+/** 按用户偏好过滤新闻 */
+export function filterByPreferences(items: NewsItem[], leagues: string[], teams: string[]): NewsItem[] {
+  const allInterests = [...leagues, ...teams]
+  if (allInterests.length === 0) return items
+  return items.filter((item) =>
+    item.tags.some((tag) => allInterests.includes(tag)) ||
+    item.title.includes(allInterests.find((t) => item.title.includes(t)) || '')
+  )
+}

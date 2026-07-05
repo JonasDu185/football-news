@@ -5,8 +5,19 @@ import { LoadMoreSentinel } from './components/LoadMoreSentinel'
 import { PullToRefresh } from './components/PullToRefresh'
 
 import { Skeleton } from './components/ui/skeleton'
+
+import { useNewsFeed } from './hooks/useNewsFeed'
+import type { NewsError } from './hooks/useNewsFeed'
+import { ErrorState } from './components/ErrorState'
+import { SearchBar } from './components/SearchBar'
+import { BookmarkList } from './components/BookmarkList'
+import { useSearch } from './hooks/useSearch'
+import { useBookmarks } from './hooks/useBookmarks'
+import { SearchIcon, BookmarkIcon } from 'lucide-react'
 import { Button } from './components/ui/button'
-import { useNews } from './hooks/useNews'
+import { ThemeToggle } from './components/ThemeToggle'
+import { useTheme } from './hooks/useTheme'
+import { BackToTop } from './components/BackToTop'
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import type { NewsItem } from './lib/newsFilter'
 
@@ -88,30 +99,57 @@ function tabToIndex(tab: string): number {
   return TAB_VALUES.indexOf(tab as TabValue)
 }
 
-function CarouselPanel({ panelRef, width, hasMore, loadingMore, onLoadMore, onRefresh, children }: {
+function CarouselPanel({ panelRef, width, hasMore, loadingMore, onLoadMore, onRefresh, error, onRetry, children }: {
   panelRef: React.RefObject<HTMLDivElement | null>
   width: number
   hasMore: boolean; loadingMore: boolean; onLoadMore: () => void
   onRefresh: () => Promise<void>
+  error?: NewsError | null
+  onRetry?: () => void
   children: React.ReactNode
 }) {
   return (
     <div ref={panelRef} className="flex-shrink-0 h-full overflow-y-auto overscroll-contain"
       style={{ width: width || '100%', WebkitOverflowScrolling: 'touch' }}>
       <PullToRefresh onRefresh={onRefresh} scrollContainerRef={panelRef}>
-        {children}
+        {error ? <ErrorState error={error} onRetry={onRetry} /> : children}
       </PullToRefresh>
-      {hasMore && <LoadMoreSentinel loading={loadingMore} onLoadMore={onLoadMore} rootRef={panelRef} />}
+      {!error && hasMore && <LoadMoreSentinel loading={loadingMore} onLoadMore={onLoadMore} rootRef={panelRef} />}
     </div>
   )
 }
 
 function App() {
   const today = useToday()
-  const { featured, hot, loading, error, hasMore, loadingMore, loadMore, retry } = useNews()
+  // 两个独立 feed：featured（每日消息+世界杯共用），hot（近期热点独立分页）
+  const featuredFeed = useNewsFeed('/api/news/featured')
+  const hotFeed = useNewsFeed('/api/news/hot')
   const [reading, setReading] = useState<NewsItem | null>(null)
   const [activeTab, setActiveTab] = useState<TabValue>('worldcup')
   const { readUrls, markRead } = useReadHistory()
+
+  // 搜索
+  const [searchOpen, setSearchOpen] = useState(false)
+  const allNews = useMemo(() => {
+    const seen = new Set<string>()
+    const combined: NewsItem[] = []
+    for (const item of [...featuredFeed.items, ...hotFeed.items]) {
+      const key = item.url ?? item.title
+      if (!seen.has(key)) { seen.add(key); combined.push(item) }
+    }
+    return combined
+  }, [featuredFeed.items, hotFeed.items])
+  const { query, setQuery, results } = useSearch(allNews)
+
+  // 收藏
+  const { bookmarks, toggleBookmark, isBookmarked, removeBookmark } = useBookmarks()
+  const [bookmarkListOpen, setBookmarkListOpen] = useState(false)
+  const bookmarkedUrls = useMemo(() => {
+    return new Set(bookmarks.map((b) => b.url))
+  }, [bookmarks])
+
+  // 主题
+  const { mode: themeMode, cycleTheme } = useTheme()
 
   // 当前页索引：0=世界杯, 1=每日消息, 2=近期热点
   const activeIndex = tabToIndex(activeTab)
@@ -140,6 +178,7 @@ function App() {
   const panel0Ref = useRef<HTMLDivElement>(null)
   const panel1Ref = useRef<HTMLDivElement>(null)
   const panel2Ref = useRef<HTMLDivElement>(null)
+  const activePanelRef = [panel0Ref, panel1Ref, panel2Ref][activeIndex]
   // ── 撕票根：CSS animation-delay 1s 后 DateHeader 飞走消失 ──
   const [headerGone, setHeaderGone] = useState(false)
 
@@ -153,33 +192,35 @@ function App() {
     }
   }, [activeIndex])
 
-  // 标签切换逻辑（左滑 = 下一个，右滑 = 上一个）
+  // 标签切换逻辑（左滑 = 下一个，右滑 = 上一个，到边界停止不循环）
   const goNext = useCallback(() => {
     setActiveTab((prev) => {
       const idx = tabToIndex(prev)
-      return TAB_VALUES[(idx + 1) % TAB_COUNT]
+      if (idx >= TAB_COUNT - 1) return prev
+      return TAB_VALUES[idx + 1]
     })
   }, [])
 
   const goPrev = useCallback(() => {
     setActiveTab((prev) => {
       const idx = tabToIndex(prev)
-      return TAB_VALUES[(idx + 2) % TAB_COUNT]
+      if (idx <= 0) return prev
+      return TAB_VALUES[idx - 1]
     })
   }, [])
 
   // ── 手势处理 ──
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (reading) return
+    if (reading || searchOpen) return
     touchStartX.current = e.touches[0].clientX
     touchStartY.current = e.touches[0].clientY
     isSwipingRef.current = false
     setSwipeOffset(0)
     setEnableTransition(false)
-  }, [reading])
+  }, [reading, searchOpen])
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (reading) return
+    if (reading || searchOpen) return
     const dx = e.touches[0].clientX - touchStartX.current
     const dy = e.touches[0].clientY - touchStartY.current
 
@@ -225,17 +266,18 @@ function App() {
   const { worldcupNews, otherNews } = useMemo(() => {
     const wc: NewsItem[] = []
     const other: NewsItem[] = []
-    for (const n of featured) {
+    for (const n of featuredFeed.items) {
       if (n.tags.includes('世界杯')) wc.push(n)
       else other.push(n)
     }
     return { worldcupNews: wc, otherNews: other }
-  }, [featured])
+  }, [featuredFeed.items])
 
   const handleRefresh = useCallback(async () => {
     await fetch('/api/news/refresh', { method: 'POST' })
-    retry()
-  }, [retry])
+    featuredFeed.retry()
+    hotFeed.retry()
+  }, [featuredFeed.retry, hotFeed.retry])
 
   // 打开阅读模式
   const openReader = useCallback((item: NewsItem) => {
@@ -289,7 +331,24 @@ function App() {
         </div>
       )}
 
-      {/* 全局标签栏 — 固定不动，只有指示器跟手滑动 */}
+      {/* 工具图标栏 */}
+      <div className="flex items-center justify-end px-3 py-1 gap-0.5">
+        <ThemeToggle mode={themeMode} onCycle={cycleTheme} />
+        <Button variant="ghost" size="icon" className="size-8" onClick={() => setBookmarkListOpen(true)} aria-label="收藏">
+          <BookmarkIcon className="size-4" />
+        </Button>
+        <Button variant="ghost" size="icon" className="size-8" onClick={() => setSearchOpen(!searchOpen)} aria-label="搜索">
+          <SearchIcon className="size-4" />
+        </Button>
+      </div>
+
+      {/* 搜索栏 */}
+      {searchOpen && (
+        <SearchBar query={query} onChange={setQuery} onClose={() => { setSearchOpen(false); setQuery('') }} />
+      )}
+
+      {/* 全局标签栏 — 搜索时隐藏 */}
+      {!searchOpen && (
       <div className="bg-background z-20 relative">
         <div className="px-4 pt-2 pb-2">
           <div className="relative flex h-10 rounded-lg bg-muted p-1 overflow-hidden">
@@ -319,6 +378,7 @@ function App() {
           </div>
         </div>
       </div>
+      )}
 
       {/* Carousel 视口 — 填满剩余高度 */}
       <div
@@ -329,21 +389,52 @@ function App() {
         onTouchEnd={handleTouchEnd}
         style={{ touchAction: 'pan-y' }}
       >
-        {loading ? (
+        {featuredFeed.loading ? (
           <div className="h-full overflow-y-auto pt-2">
             <NewsSkeleton />
           </div>
-        ) : error ? (
-          <div className="h-full flex items-center justify-center">
-            <div className="px-4 py-12 text-center space-y-3">
-              <p className="text-muted-foreground text-sm">{error}</p>
-              <Button variant="outline" size="sm" onClick={retry}>
-                重新加载
-              </Button>
-            </div>
+        ) : searchOpen ? (
+          /* 搜索模式：统一留空，不管有没有输入 */
+          <div className="h-full overflow-y-auto pt-2">
+            {query ? (
+              results.length === 0 ? (
+                <p className="px-4 py-12 text-center text-muted-foreground text-sm">未找到相关新闻</p>
+              ) : (
+                <NewsList columns={2} news={results} onCardClick={openReader} readUrls={readUrls}
+                  bookmarkedUrls={bookmarkedUrls} onToggleBookmark={toggleBookmark} />
+              )
+            ) : (
+              /* 搜索栏打开但尚未输入 → 显示不可滑动的 Carousel */
+              <div
+                className="flex h-full"
+                style={{ transform: trackTransform, overflowAnchor: 'none' }}
+              >
+                <CarouselPanel panelRef={panel0Ref} width={viewportWidth} onRefresh={handleRefresh}
+                  hasMore={featuredFeed.hasMore} loadingMore={featuredFeed.loadingMore}
+                  onLoadMore={featuredFeed.loadMore}
+                  error={featuredFeed.error} onRetry={featuredFeed.retry}>
+                  <NewsList columns={2} news={worldcupNews} onCardClick={openReader} readUrls={readUrls}
+                    bookmarkedUrls={bookmarkedUrls} onToggleBookmark={toggleBookmark} />
+                </CarouselPanel>
+                <CarouselPanel panelRef={panel1Ref} width={viewportWidth} onRefresh={handleRefresh}
+                  hasMore={featuredFeed.hasMore} loadingMore={featuredFeed.loadingMore}
+                  onLoadMore={featuredFeed.loadMore}
+                  error={featuredFeed.error} onRetry={featuredFeed.retry}>
+                  <NewsList columns={2} news={otherNews} onCardClick={openReader} readUrls={readUrls}
+                    bookmarkedUrls={bookmarkedUrls} onToggleBookmark={toggleBookmark} />
+                </CarouselPanel>
+                <CarouselPanel panelRef={panel2Ref} width={viewportWidth} onRefresh={handleRefresh}
+                  hasMore={hotFeed.hasMore} loadingMore={hotFeed.loadingMore}
+                  onLoadMore={hotFeed.loadMore}
+                  error={hotFeed.error} onRetry={hotFeed.retry}>
+                  <NewsList columns={2} news={hotFeed.items} onCardClick={openReader} readUrls={readUrls} showFeatured
+                    bookmarkedUrls={bookmarkedUrls} onToggleBookmark={toggleBookmark} />
+                </CarouselPanel>
+              </div>
+            )}
           </div>
         ) : (
-          /* 三页横排 track */
+          /* 正常模式：三页横排 track */
           <div
             className="flex h-full"
             style={{
@@ -354,20 +445,32 @@ function App() {
             }}
           >
             <CarouselPanel panelRef={panel0Ref} width={viewportWidth} onRefresh={handleRefresh}
-              hasMore={hasMore} loadingMore={loadingMore} onLoadMore={loadMore}>
-              <NewsList columns={2} news={worldcupNews} onCardClick={openReader} readUrls={readUrls} />
+              hasMore={featuredFeed.hasMore} loadingMore={featuredFeed.loadingMore}
+              onLoadMore={featuredFeed.loadMore}
+              error={featuredFeed.error} onRetry={featuredFeed.retry}>
+              <NewsList columns={2} news={worldcupNews} onCardClick={openReader} readUrls={readUrls}
+                bookmarkedUrls={bookmarkedUrls} onToggleBookmark={toggleBookmark} />
             </CarouselPanel>
             <CarouselPanel panelRef={panel1Ref} width={viewportWidth} onRefresh={handleRefresh}
-              hasMore={hasMore} loadingMore={loadingMore} onLoadMore={loadMore}>
-              <NewsList columns={2} news={otherNews} onCardClick={openReader} readUrls={readUrls} />
+              hasMore={featuredFeed.hasMore} loadingMore={featuredFeed.loadingMore}
+              onLoadMore={featuredFeed.loadMore}
+              error={featuredFeed.error} onRetry={featuredFeed.retry}>
+              <NewsList columns={2} news={otherNews} onCardClick={openReader} readUrls={readUrls}
+                bookmarkedUrls={bookmarkedUrls} onToggleBookmark={toggleBookmark} />
             </CarouselPanel>
             <CarouselPanel panelRef={panel2Ref} width={viewportWidth} onRefresh={handleRefresh}
-              hasMore={hasMore} loadingMore={loadingMore} onLoadMore={loadMore}>
-              <NewsList columns={2} news={hot} onCardClick={openReader} readUrls={readUrls} showFeatured />
+              hasMore={hotFeed.hasMore} loadingMore={hotFeed.loadingMore}
+              onLoadMore={hotFeed.loadMore}
+              error={hotFeed.error} onRetry={hotFeed.retry}>
+              <NewsList columns={2} news={hotFeed.items} onCardClick={openReader} readUrls={readUrls} showFeatured
+                bookmarkedUrls={bookmarkedUrls} onToggleBookmark={toggleBookmark} />
             </CarouselPanel>
           </div>
         )}
       </div>
+
+      {/* 回到顶部 */}
+      <BackToTop scrollContainerRef={activePanelRef} />
 
       {/* 阅读模式 — fixed 覆盖层 */}
       {reading && (
@@ -382,6 +485,17 @@ function App() {
           </div>
         </div>
       )}
+
+      {/* 收藏列表 */}
+      {bookmarkListOpen && (
+        <BookmarkList
+          bookmarks={bookmarks}
+          onBack={() => setBookmarkListOpen(false)}
+          onCardClick={(item) => { setBookmarkListOpen(false); openReader(item) }}
+          onClearAll={() => { if (confirm('确定清空所有收藏？')) bookmarks.forEach(b => removeBookmark(b.url)) }}
+        />
+      )}
+
     </div>
   )
 }

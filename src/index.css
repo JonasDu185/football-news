@@ -97,40 +97,45 @@
     --sidebar-ring: oklch(0.58 0.22 28);
 }
 
-/* ── 看台主题 · 球场夜（深色）─ 跟随系统自动切换 ── */
+/* ── 看台主题 · 球场夜（深色）── */
+.dark {
+  --background: oklch(0.15 0.02 255);
+  --foreground: oklch(0.93 0.01 255);
+  --card: oklch(0.22 0.03 255);
+  --card-foreground: oklch(0.93 0.01 255);
+  --popover: oklch(0.22 0.03 255);
+  --popover-foreground: oklch(0.93 0.01 255);
+  --primary: oklch(0.58 0.22 28);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.24 0.03 255);
+  --secondary-foreground: oklch(0.93 0.01 255);
+  --muted: oklch(0.22 0.03 255);
+  --muted-foreground: oklch(0.62 0.03 255);
+  --accent: oklch(0.58 0.22 28);
+  --accent-foreground: oklch(0.99 0 0);
+  --destructive: oklch(0.58 0.25 28);
+  --border: oklch(0.24 0.03 255);
+  --input: oklch(0.24 0.03 255);
+  --ring: oklch(0.58 0.22 28);
+  --chart-1: oklch(0.58 0.22 28);
+  --chart-2: oklch(0.62 0.03 255);
+  --chart-3: oklch(0.22 0.03 255);
+  --chart-4: oklch(0.24 0.03 255);
+  --chart-5: oklch(0.15 0.02 255);
+  --sidebar: oklch(0.15 0.02 255);
+  --sidebar-foreground: oklch(0.93 0.01 255);
+  --sidebar-primary: oklch(0.58 0.22 28);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.22 0.03 255);
+  --sidebar-accent-foreground: oklch(0.93 0.01 255);
+  --sidebar-border: oklch(0.24 0.03 255);
+  --sidebar-ring: oklch(0.58 0.22 28);
+}
+
+/* 页面首次加载时，在 JS 运行前用系统偏好避免闪烁 */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: oklch(0.15 0.02 255);
-    --foreground: oklch(0.93 0.01 255);
-    --card: oklch(0.22 0.03 255);
-    --card-foreground: oklch(0.93 0.01 255);
-    --popover: oklch(0.22 0.03 255);
-    --popover-foreground: oklch(0.93 0.01 255);
-    --primary: oklch(0.58 0.22 28);
-    --primary-foreground: oklch(0.99 0 0);
-    --secondary: oklch(0.24 0.03 255);
-    --secondary-foreground: oklch(0.93 0.01 255);
-    --muted: oklch(0.22 0.03 255);
-    --muted-foreground: oklch(0.62 0.03 255);
-    --accent: oklch(0.58 0.22 28);
-    --accent-foreground: oklch(0.99 0 0);
-    --destructive: oklch(0.58 0.25 28);
-    --border: oklch(0.24 0.03 255);
-    --input: oklch(0.24 0.03 255);
-    --ring: oklch(0.58 0.22 28);
-    --chart-1: oklch(0.58 0.22 28);
-    --chart-2: oklch(0.62 0.03 255);
-    --chart-3: oklch(0.22 0.03 255);
-    --chart-4: oklch(0.24 0.03 255);
-    --chart-5: oklch(0.15 0.02 255);
-    --sidebar: oklch(0.15 0.02 255);
-    --sidebar-foreground: oklch(0.93 0.01 255);
-    --sidebar-primary: oklch(0.58 0.22 28);
-    --sidebar-primary-foreground: oklch(0.99 0 0);
-    --sidebar-accent: oklch(0.22 0.03 255);
-    --sidebar-accent-foreground: oklch(0.93 0.01 255);
-    --sidebar-border: oklch(0.24 0.03 255);
-    --sidebar-ring: oklch(0.58 0.22 28);
+  :root:not(.light) {
+    color-scheme: dark;
   }
 }
 
@@ -187,7 +192,7 @@
   100% { transform: translateY(-120px) scale(0.8); opacity: 0; }
 }
 .animate-tear-off {
-  animation: tear-off 0.6s ease-in 1s both;
+  animation: tear-off 0.6s ease-in 2s both;
 }
 @media (prefers-reduced-motion: reduce) {
   .animate-tear-off {
