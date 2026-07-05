@@ -49,11 +49,6 @@ export function useBookmarks() {
     }
   })
 
-  const persist = (list: BookmarkEntry[]) => {
-    setBookmarks(list)
-    localStorage.setItem('football-bookmarks', JSON.stringify(list))
-  }
-
   const addBookmark = useCallback((item: NewsItem) => {
     setBookmarks((prev) => {
       if (prev.some((b) => b.url === item.url)) return prev

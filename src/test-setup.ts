@@ -23,7 +23,7 @@ global.ResizeObserver = class ResizeObserver {
 }
 
 // jsdom 不支持 IntersectionObserver，mock 它
-global.IntersectionObserver = class IntersectionObserver {
+global.IntersectionObserver = class {
   root = null
   rootMargin = ''
   thresholds = []
@@ -31,4 +31,4 @@ global.IntersectionObserver = class IntersectionObserver {
   unobserve() {}
   disconnect() {}
   takeRecords() { return [] }
-}
+} as unknown as typeof IntersectionObserver

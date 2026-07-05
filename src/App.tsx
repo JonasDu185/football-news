@@ -142,7 +142,7 @@ function App() {
   const { query, setQuery, results } = useSearch(allNews)
 
   // 收藏
-  const { bookmarks, toggleBookmark, isBookmarked, removeBookmark } = useBookmarks()
+  const { bookmarks, toggleBookmark, removeBookmark } = useBookmarks()
   const [bookmarkListOpen, setBookmarkListOpen] = useState(false)
   const bookmarkedUrls = useMemo(() => {
     return new Set(bookmarks.map((b) => b.url))
