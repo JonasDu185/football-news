@@ -74,6 +74,17 @@ function App() {
   const [swipeOffset, setSwipeOffset] = useState(0)    // 水平偏移量（px）
   const [swipeTransition, setSwipeTransition] = useState(false)  // 松手后是否开过渡动画
   const suppressAnimRef = useRef(false)  // 横滑切换时抑制卡片进场动画（ref 避免触发重渲染）
+
+  // 标签切换时滚回顶部（body 是实际滚动容器）
+  const prevTabKey = useRef(`${activeTab}-${worldcupFilter}`)
+  useEffect(() => {
+    const currentKey = `${activeTab}-${worldcupFilter}`
+    if (prevTabKey.current !== currentKey) {
+      prevTabKey.current = currentKey
+      document.body.scrollTop = 0
+      document.documentElement.scrollTop = 0
+    }
+  }, [activeTab, worldcupFilter])
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
   const isSwipingRef = useRef(false)  // 是否已进入横滑模式
@@ -193,7 +204,7 @@ function App() {
 
   return (
     <div
-      className="min-h-screen bg-background max-w-md mx-auto relative overflow-hidden"
+      className="min-h-screen bg-background max-w-md mx-auto relative"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -202,33 +213,22 @@ function App() {
       <div>
         <DateHeader date={today} />
 
-      <PullToRefresh onRefresh={handleRefresh}>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-          <div className="sticky top-[120px] z-10 bg-background/95 backdrop-blur px-4 py-2">
-            <TabsList className="w-full h-10">
-            <TabsTrigger value="featured" className="flex-1 text-sm relative data-active:text-foreground data-active:after:absolute data-active:after:bottom-0 data-active:after:left-1/4 data-active:after:w-1/2 data-active:after:h-0.5 data-active:after:bg-primary data-active:after:rounded-full">
-              每日精选
-            </TabsTrigger>
-            <TabsTrigger value="hot" className="flex-1 text-sm relative data-active:text-foreground data-active:after:absolute data-active:after:bottom-0 data-active:after:left-1/4 data-active:after:w-1/2 data-active:after:h-0.5 data-active:after:bg-primary data-active:after:rounded-full">
-              近期热点
-            </TabsTrigger>
-          </TabsList>
-        </div>
-
-        <TabsContent value="featured" className="mt-2">
-          {loading ? (
-            <NewsSkeleton />
-          ) : error ? (
-            <div className="px-4 py-12 text-center space-y-3">
-              <p className="text-muted-foreground text-sm">{error}</p>
-              <Button variant="outline" size="sm" onClick={retry}>
-                重新加载
-              </Button>
+          {/* 标签栏 + 子标签合并为一个 sticky 容器（在 PullToRefresh 外，不受 transition 干扰） */}
+          <div className="sticky top-0 z-20 bg-background">
+            <div className="px-4 py-2">
+              <TabsList className="w-full h-10">
+                <TabsTrigger value="featured" className="flex-1 text-sm relative data-active:text-foreground data-active:after:absolute data-active:after:bottom-0 data-active:after:left-1/4 data-active:after:w-1/2 data-active:after:h-0.5 data-active:after:bg-primary data-active:after:rounded-full">
+                  每日精选
+                </TabsTrigger>
+                <TabsTrigger value="hot" className="flex-1 text-sm relative data-active:text-foreground data-active:after:absolute data-active:after:bottom-0 data-active:after:left-1/4 data-active:after:w-1/2 data-active:after:h-0.5 data-active:after:bg-primary data-active:after:rounded-full">
+                  近期热点
+                </TabsTrigger>
+              </TabsList>
             </div>
-          ) : (
-            <>
-              {/* 世界杯 / 其他赛事 子标签 — 下划线式 */}
-              <div className="flex justify-center gap-6 px-4 mb-3">
+            {/* 世界杯 / 其他赛事 子标签 — 仅在每日精选下显示 */}
+            {activeTab === 'featured' && !loading && !error && (
+              <div className="flex justify-center gap-6 px-4 pt-0 pb-2 border-b border-border">
                 <button
                   type="button"
                   onClick={() => setWorldcupFilter(true)}
@@ -252,16 +252,32 @@ function App() {
                   其他赛事
                 </button>
               </div>
+            )}
+          </div>
+
+        <TabsContent value="featured" className="mt-2">
+          {loading ? (
+            <NewsSkeleton />
+          ) : error ? (
+            <div className="px-4 py-12 text-center space-y-3">
+              <p className="text-muted-foreground text-sm">{error}</p>
+              <Button variant="outline" size="sm" onClick={retry}>
+                重新加载
+              </Button>
+            </div>
+          ) : (
+            <PullToRefresh onRefresh={handleRefresh}>
               <div
                 style={{
                   transform: `translateX(${swipeOffset}px)`,
                   transition: swipeTransition ? 'transform 0.3s ease-out' : 'none',
+                  overflowAnchor: 'none',
                 }}
               >
-                <NewsList news={worldcupFilter ? worldcupNews : otherNews} onCardClick={openReader} readUrls={readUrls} suppressAnim={suppressAnimRef.current} />
+                <NewsList key={`${activeTab}-${worldcupFilter}`} news={worldcupFilter ? worldcupNews : otherNews} onCardClick={openReader} readUrls={readUrls} suppressAnim={suppressAnimRef.current} />
                 {hasMore && <LoadMoreSentinel loading={loadingMore} onLoadMore={loadMore} />}
               </div>
-            </>
+            </PullToRefresh>
           )}
         </TabsContent>
 
@@ -276,21 +292,21 @@ function App() {
               </Button>
             </div>
           ) : (
-            <>
+            <PullToRefresh onRefresh={handleRefresh}>
               <div
                 style={{
                   transform: `translateX(${swipeOffset}px)`,
                   transition: swipeTransition ? 'transform 0.3s ease-out' : 'none',
+                  overflowAnchor: 'none',
                 }}
               >
-                <NewsList news={hot} onCardClick={openReader} showFeatured suppressAnim={suppressAnimRef.current} />
+                <NewsList key={`${activeTab}-${worldcupFilter}`} news={hot} onCardClick={openReader} showFeatured suppressAnim={suppressAnimRef.current} />
                 {hasMore && <LoadMoreSentinel loading={loadingMore} onLoadMore={loadMore} />}
               </div>
-            </>
+            </PullToRefresh>
           )}
         </TabsContent>
       </Tabs>
-      </PullToRefresh>
       </div>
 
       {/* 阅读模式——fixed 覆盖整个视口，不依赖父级定位，列表滚动位置自然保留 */}

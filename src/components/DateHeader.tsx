@@ -11,7 +11,7 @@ export function DateHeader({ date }: DateHeaderProps) {
   const fullDate = `${date.getFullYear()}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 
   return (
-    <header role="banner" className="sticky top-0 z-10 bg-background/95 backdrop-blur">
+    <header role="banner" className="bg-background/95 backdrop-blur">
       {/* 票根卡片 */}
       <div className="mx-4 mt-4 rounded-t-2xl bg-card border border-border border-b-0 overflow-hidden">
         <div className="flex">
