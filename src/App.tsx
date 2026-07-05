@@ -117,8 +117,6 @@ function App() {
   const panel0Ref = useRef<HTMLDivElement>(null)
   const panel1Ref = useRef<HTMLDivElement>(null)
   const panel2Ref = useRef<HTMLDivElement>(null)
-  const panelRefs = [panel0Ref, panel1Ref, panel2Ref] as const
-
   // ── 撕票根：打开 1 秒后 DateHeader 飞走消失，此后不再出现 ──
   const [headerPhase, setHeaderPhase] = useState<'visible' | 'tearing' | 'gone'>('visible')
   useEffect(() => {
@@ -270,8 +268,7 @@ function App() {
           className="shrink-0"
           style={{
             overflow: 'hidden',
-            transition: headerPhase === 'gone' ? 'max-height 0.4s ease-out' : 'none',
-            maxHeight: headerPhase === 'gone' ? '0px' : '200px',
+            maxHeight: '200px',
           }}
         >
           <div
