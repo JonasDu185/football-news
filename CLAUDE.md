@@ -63,6 +63,16 @@ npm run build && scp -r dist/ src/ football-news:/opt/football-news/ && ssh foot
 - 映射表在 `src/lib/newsFilter.ts` 的 `guessSourceName` 函数
 - 知名域名（x.com→Twitter, mirror.co.uk→镜报 等）
 
+### Flex + 百分比宽度的循环依赖陷阱
+- **根因**: flex 容器内子元素设 `width: 100%`，但 flex 容器自身宽度由子元素撑开 → 循环依赖。浏览器解析 `100%` 时行为不一致，子元素宽度可能远小于预期。
+- **表现**: Carousel 三页横排，`translateX(-33.333%)` 偏移量不够，第 2、3 页内容显示不全或完全不可见。
+- **教训**: Carousel / 面板切换场景，**不要用 CSS 百分比做偏移**。用 `ResizeObserver` 测量容器像素宽度，全部用 `translateX(-N * viewportWidth + swipeOffset)px` 像素计算，面板设显式 `style={{ width: viewportWidth }}`。
+- **通用规则**: 任何需要"子元素宽度 = 父元素宽度 × N"的场景，如果父子宽度互相依赖，一律用 JS 测量 + 像素赋值。
+
+### Carousel 页面切换动画的时序陷阱
+- **根因**: React 事件处理器中先 `setActiveTab` 再在 `useEffect` 里 `setEnableTransition(true)`。状态更新批量合并后，第一帧渲染时 activeIndex 已变但 transition 还是 `none`，track 瞬间跳到新位置。useEffect 再开过渡已无意义。
+- **教训**: 点击切页时，**先设 `setEnableTransition(true)`，再改 `setActiveTab`**。React 18 在事件处理器中批量合并状态，一次渲染同时生效 → 动画正常。
+
 ## 项目结构
 
 ```
@@ -74,13 +84,15 @@ src/
     storage.ts             # SQLite CRUD + 清理
     reader.ts              # 文章正文提取（Readability）
   components/
-    NewsCard.tsx           # 新闻卡片（缩略图+标签+来源+时间）
-    NewsList.tsx           # 列表 + 空状态
+    NewsCard.tsx           # 新闻卡片（支持 compact 瀑布流模式）
+    NewsList.tsx           # 新闻列表（支持 columns=2 瀑布流双列）
     DateHeader.tsx         # 日期顶栏
     ReaderView.tsx         # 阅读模式视图
-    PullToRefresh.tsx      # 下拉刷新
-    LoadMoreSentinel.tsx   # 无限滚动哨兵
+    PullToRefresh.tsx      # 下拉刷新（支持自定义 scrollContainerRef）
+    LoadMoreSentinel.tsx   # 无限滚动哨兵（支持自定义 IntersectionObserver root）
     ui/                    # shadcn 组件
   hooks/useNews.ts         # 前端数据加载
-  App.tsx                  # 主页面（标签切换 + 阅读模式路由）
+  App.tsx                  # 主页面：三标签 Carousel（世界杯|每日消息|近期热点）
+                           #   布局 h-dvh flex-col → 固定头部 + 面板独立 overflow-y:auto
+                           #   三页始终挂载横排，ResizeObserver 像素定位 + 横滑跟手
 ```

@@ -3,9 +3,11 @@ import { useState, useRef, useCallback, type ReactNode, type TouchEvent } from '
 interface PullToRefreshProps {
   onRefresh: () => Promise<void>
   children: ReactNode
+  /** 滚动容器的 ref，用于判断是否在顶部。不传则用 window */
+  scrollContainerRef?: React.RefObject<HTMLElement | null>
 }
 
-export function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
+export function PullToRefresh({ onRefresh, children, scrollContainerRef }: PullToRefreshProps) {
   const [pulling, setPulling] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [pullDistance, setPullDistance] = useState(0)
@@ -15,13 +17,19 @@ export function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
 
   const THRESHOLD = 60
 
+  const isAtTop = useCallback(() => {
+    const el = scrollContainerRef?.current
+    if (el) return el.scrollTop <= 5
+    return window.scrollY <= 5
+  }, [scrollContainerRef])
+
   const handleTouchStart = useCallback((e: TouchEvent) => {
-    // 只在页面滚动到顶部时才触发下拉
-    if (window.scrollY > 5) return
+    // 只在滚动到顶部时才触发下拉
+    if (!isAtTop()) return
     startX.current = e.touches[0].clientX
     startY.current = e.touches[0].clientY
     pullingRef.current = true
-  }, [])
+  }, [isAtTop])
 
   const handleTouchMove = useCallback(
     (e: TouchEvent) => {
