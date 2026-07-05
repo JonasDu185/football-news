@@ -73,6 +73,24 @@ npm run build && scp -r dist/ src/ football-news:/opt/football-news/ && ssh foot
 - **根因**: React 事件处理器中先 `setActiveTab` 再在 `useEffect` 里 `setEnableTransition(true)`。状态更新批量合并后，第一帧渲染时 activeIndex 已变但 transition 还是 `none`，track 瞬间跳到新位置。useEffect 再开过渡已无意义。
 - **教训**: 点击切页时，**先设 `setEnableTransition(true)`，再改 `setActiveTab`**。React 18 在事件处理器中批量合并状态，一次渲染同时生效 → 动画正常。
 
+### 滚动驱动的动画：用 DOM 操作，不用 React 状态
+- **根因**: 面板 `onScroll` → React `setState` → 重渲染 → `maxHeight` 变化 → flex 重新布局 → 面板高度变化 → 触发新 scroll 事件 → 死循环闪烁。`collapsingRef` 守卫也解决不了，反而导致掉帧和状态不一致。
+- **表现**: 页面疯狂闪烁、停不下来；或动画卡顿、切页后状态随机。
+- **教训**: 滚动驱动的视觉动画（DateHeader 翻折）**直接操作 DOM**，配合 `requestAnimationFrame` 节流。不经过 React 状态，不触发重渲染。只改 `transform`/`opacity`（GPU 合成），不改布局属性。
+
+### 固定区 vs 滚动区的职责分离
+- **根因**: DateHeader + Tabs 放进面板内 → 随 carousel `translateX` 横滑，整个页面都在动。拿出来全局 → 滚动驱动的折叠用 JS，两段式滚动丢失。反复横跳。
+- **最终方案**: DateHeader + Tabs **全局固定**（不参与横滑），面板内**只有新闻内容**。折叠用 JS 监听面板 scrollTop + 直接 DOM 操作。Tabs 的选中指示器用 `left` 定位 + carousel 的 `swipeOffset` 驱动跟手移动。
+- **关键原则**: 用户眼睛看到"不动"的东西（头部、标签），DOM 里就让它真的不动。动的只有该动的（新闻卡片、指示框）。
+
+### translateX 百分比基准陷阱
+- **根因**: `translateX(200%)` 的百分比相对**元素自身宽度**。元素宽 `calc(100%/3)`，自身宽度的 200% = 容器 66.67%，叠加浮点误差 → 第三个标签指示器超出底板。
+- **教训**: 需要"元素在容器内三等分定位"时，用 `left`（相对容器）不 用 `translateX`（相对自身）。`left: calc(N * 100% / 3)` 精确到容器三等分点，不累积误差。
+
+### 切页保持 UI 状态一致性
+- **根因**: DateHeader 在各面板内独立存在，切页时各自 scrollTop 不同 → 有的展开有的折叠。一刀切设 `scrollTop = headerHeight` → 原本展开的也被强制折叠。
+- **方案**: 用全局 ref（`headerVisibleRef`）追踪 DateHeader 显隐。切页时读 ref → visible 则新页 `scrollTop=0`，hidden 则 `scrollTop=headerHeight`。状态跨面板一致。
+
 ## 项目结构
 
 ```
@@ -92,7 +110,8 @@ src/
     LoadMoreSentinel.tsx   # 无限滚动哨兵（支持自定义 IntersectionObserver root）
     ui/                    # shadcn 组件
   hooks/useNews.ts         # 前端数据加载
-  App.tsx                  # 主页面：三标签 Carousel（世界杯|每日消息|近期热点）
-                           #   布局 h-dvh flex-col → 固定头部 + 面板独立 overflow-y:auto
-                           #   三页始终挂载横排，ResizeObserver 像素定位 + 横滑跟手
+  App.tsx                  # 主页面：
+                           #   全局 DateHeader（折叠 JS + DOM）+ 全局 Tabs（滑动指示器）
+                           #   Carousel：三面板纯新闻，ResizeObserver 像素定位 + 横滑跟手
+                           #   headerVisibleRef 全局追踪折叠态，切页保持一致性
 ```

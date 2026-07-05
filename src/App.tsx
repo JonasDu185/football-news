@@ -119,44 +119,56 @@ function App() {
   const panel2Ref = useRef<HTMLDivElement>(null)
   const panelRefs = [panel0Ref, panel1Ref, panel2Ref] as const
 
-  // ── 票根翻折：DateHeader 在面板内，scrollTop 跳过它 = 自然消失 ──
+  // ── 票根翻折：DateHeader 显隐状态全局一致，切页不改变 ──
   const activeIndexRef = useRef(activeIndex)
   useEffect(() => { activeIndexRef.current = activeIndex }, [activeIndex])
+  const headerVisibleRef = useRef(true)  // 全局：DateHeader 是否可见
   const rafRef = useRef(0)
+
+  // 翻折：全局 DateHeader，由当前面板 scrollTop 驱动
+  const applyFold = useCallback((st: number) => {
+    const foldEl = document.querySelector('[data-header-fold]') as HTMLElement | null
+    const wrapEl = document.querySelector('[data-header-wrap]') as HTMLElement | null
+    const h = foldEl?.offsetHeight || 100
+    const progress = Math.max(0, Math.min(st / h, 1))
+    if (foldEl) {
+      foldEl.style.transform = progress > 0 ? `perspective(600px) rotateX(${progress * 50}deg)` : ''
+      foldEl.style.opacity = progress > 0 ? `${1 - progress}` : ''
+      foldEl.style.transformOrigin = 'bottom center'
+    }
+    if (wrapEl) {
+      wrapEl.style.maxHeight = progress > 0 ? `${h - progress * h}px` : ''
+      wrapEl.style.overflow = progress > 0 ? 'hidden' : 'visible'
+    }
+    headerVisibleRef.current = st < h
+  }, [])
 
   const handlePanelScroll = useCallback(() => {
     if (rafRef.current) return
     rafRef.current = requestAnimationFrame(() => {
       rafRef.current = 0
       const panel = panelRefs[activeIndexRef.current].current
-      if (!panel) return
-      // 从当前面板内找 DateHeader（每个面板各有一个）
-      const foldEl = panel.querySelector('[data-header-fold]') as HTMLElement | null
-      if (!foldEl) return
-      const st = panel.scrollTop
-      const h = foldEl.offsetHeight
-      const progress = Math.max(0, Math.min(st / h, 1))
-      foldEl.style.transform = progress > 0 ? `perspective(600px) rotateX(${progress * 50}deg)` : ''
-      foldEl.style.opacity = progress > 0 ? `${1 - progress}` : ''
-      foldEl.style.transformOrigin = 'bottom center'
+      if (panel) applyFold(panel.scrollTop)
     })
-  }, [])
+  }, [applyFold])
 
-  // 切页时：目标面板 scrollTop = 面板内 DateHeader 高度，跳过日期卡，新闻从顶端开始
+  // 切页：DateHeader 显隐状态不变 + 每页从顶端开始
   const prevIndexRef = useRef(activeIndex)
   useEffect(() => {
     if (prevIndexRef.current !== activeIndex) {
       prevIndexRef.current = activeIndex
       const panel = panelRefs[activeIndex].current
+      // 读全局 DateHeader 高度
+      const h = document.querySelector('[data-header-fold]')?.offsetHeight || 100
       if (panel) {
-        // 测量该面板内 DateHeader 高度（不受折叠影响，因为面板刚挂载 scrollTop=0）
-        const h = panel.querySelector('[data-header-fold]')?.offsetHeight || 100
-        panel.scrollTop = h
+        panel.scrollTop = headerVisibleRef.current ? 0 : h
       }
+      // 立即应用折叠态
+      if (!headerVisibleRef.current) applyFold(h)
       const timer = setTimeout(() => setEnableTransition(false), 300)
       return () => clearTimeout(timer)
     }
-  }, [activeIndex])
+  }, [activeIndex, applyFold])
 
   // 标签切换逻辑（左滑 = 下一个，右滑 = 上一个）
   const goNext = useCallback(() => {
@@ -286,6 +298,43 @@ function App() {
 
   return (
     <div className="h-dvh flex flex-col bg-background max-w-md mx-auto relative">
+      {/* 全局 DateHeader — 滚动时翻折消失 */}
+      <div data-header-wrap className="shrink-0" style={{ overflow: 'visible' }}>
+        <div data-header-fold>
+          <DateHeader date={today} />
+        </div>
+      </div>
+
+      {/* 全局标签栏 — 固定不动，只有指示器跟手滑动 */}
+      <div className="bg-background z-20 relative">
+        <div className="px-4 pt-2 pb-2">
+          <div className="relative flex h-10 rounded-lg bg-muted p-1 overflow-hidden">
+            {/* 滑动指示器 — left 相对容器，避免 translateX 自身百分比叠加误差 */}
+            <div
+              className="absolute top-1.5 h-7 rounded-lg bg-background shadow-sm"
+              style={{
+                width: 'calc(100% / 3 - 8px)',
+                left: viewportWidth > 0
+                  ? `calc(${activeIndex} * 100% / 3 + 4px - ${(swipeOffset / viewportWidth) * (100 / 3)}%)`
+                  : `calc(${activeIndex} * 100% / 3 + 4px)`,
+                transition: enableTransition ? 'left 0.3s ease-out' : 'none',
+              }}
+            />
+            {(['worldcup', 'daily', 'hot'] as const).map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => handleTabClick(tab)}
+                className={`flex-1 text-sm rounded-md transition-colors relative z-10 ${
+                  activeTab === tab ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {{ worldcup: '世界杯', daily: '每日消息', hot: '近期热点' }[tab]}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
 
       {/* Carousel 视口 — 填满剩余高度 */}
       <div
@@ -327,28 +376,6 @@ function App() {
               className="flex-shrink-0 h-full overflow-y-auto overscroll-contain"
               style={{ width: viewportWidth || '100%', WebkitOverflowScrolling: 'touch' }}
             >
-              {/* DateHeader + sticky 标签栏：两段式滚动 + 翻折 */}
-              <div data-header-fold>
-                <DateHeader date={today} />
-              </div>
-              <div className="sticky top-0 z-20 bg-background">
-                <div className="px-4 pt-2 pb-2">
-                  <div className="flex h-10 rounded-lg bg-muted p-1">
-                    {(['worldcup', 'daily', 'hot'] as const).map((tab) => (
-                      <button
-                        key={tab}
-                        type="button"
-                        onClick={() => handleTabClick(tab)}
-                        className={`flex-1 text-sm rounded-md transition-all ${
-                          activeTab === tab ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                      >
-                        {{ worldcup: '世界杯', daily: '每日消息', hot: '近期热点' }[tab]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
               <PullToRefresh onRefresh={handleRefresh} scrollContainerRef={panel0Ref}>
                 <NewsList columns={2} news={worldcupNews} onCardClick={openReader} readUrls={readUrls} />
               </PullToRefresh>
@@ -362,27 +389,6 @@ function App() {
               className="flex-shrink-0 h-full overflow-y-auto overscroll-contain"
               style={{ width: viewportWidth || '100%', WebkitOverflowScrolling: 'touch' }}
             >
-              <div data-header-fold>
-                <DateHeader date={today} />
-              </div>
-              <div className="sticky top-0 z-20 bg-background">
-                <div className="px-4 pt-2 pb-2">
-                  <div className="flex h-10 rounded-lg bg-muted p-1">
-                    {(['worldcup', 'daily', 'hot'] as const).map((tab) => (
-                      <button
-                        key={tab}
-                        type="button"
-                        onClick={() => handleTabClick(tab)}
-                        className={`flex-1 text-sm rounded-md transition-all ${
-                          activeTab === tab ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                      >
-                        {{ worldcup: '世界杯', daily: '每日消息', hot: '近期热点' }[tab]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
               <PullToRefresh onRefresh={handleRefresh} scrollContainerRef={panel1Ref}>
                 <NewsList columns={2} news={otherNews} onCardClick={openReader} readUrls={readUrls} />
               </PullToRefresh>
@@ -396,27 +402,6 @@ function App() {
               className="flex-shrink-0 h-full overflow-y-auto overscroll-contain"
               style={{ width: viewportWidth || '100%', WebkitOverflowScrolling: 'touch' }}
             >
-              <div data-header-fold>
-                <DateHeader date={today} />
-              </div>
-              <div className="sticky top-0 z-20 bg-background">
-                <div className="px-4 pt-2 pb-2">
-                  <div className="flex h-10 rounded-lg bg-muted p-1">
-                    {(['worldcup', 'daily', 'hot'] as const).map((tab) => (
-                      <button
-                        key={tab}
-                        type="button"
-                        onClick={() => handleTabClick(tab)}
-                        className={`flex-1 text-sm rounded-md transition-all ${
-                          activeTab === tab ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                      >
-                        {{ worldcup: '世界杯', daily: '每日消息', hot: '近期热点' }[tab]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
               <PullToRefresh onRefresh={handleRefresh} scrollContainerRef={panel2Ref}>
                 <NewsList columns={2} news={hot} onCardClick={openReader} readUrls={readUrls} showFeatured />
               </PullToRefresh>
