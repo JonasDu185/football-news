@@ -75,12 +75,35 @@ function useReadHistory() {
   return { readUrls, markRead }
 }
 
-// 标签值 → 索引映射
-const TAB_ORDER = ['worldcup', 'daily', 'hot'] as const
-type TabValue = typeof TAB_ORDER[number]
+const TABS = [
+  { value: 'worldcup', label: '世界杯' },
+  { value: 'daily',    label: '每日消息' },
+  { value: 'hot',      label: '近期热点' },
+] as const
+type TabValue = (typeof TABS)[number]['value']
+const TAB_VALUES = TABS.map(t => t.value)
+const TAB_COUNT = TABS.length
 
 function tabToIndex(tab: string): number {
-  return TAB_ORDER.indexOf(tab as TabValue)
+  return TAB_VALUES.indexOf(tab as TabValue)
+}
+
+function CarouselPanel({ panelRef, width, hasMore, loadingMore, onLoadMore, onRefresh, children }: {
+  panelRef: React.RefObject<HTMLDivElement | null>
+  width: number
+  hasMore: boolean; loadingMore: boolean; onLoadMore: () => void
+  onRefresh: () => Promise<void>
+  children: React.ReactNode
+}) {
+  return (
+    <div ref={panelRef} className="flex-shrink-0 h-full overflow-y-auto overscroll-contain"
+      style={{ width: width || '100%', WebkitOverflowScrolling: 'touch' }}>
+      <PullToRefresh onRefresh={onRefresh} scrollContainerRef={panelRef}>
+        {children}
+      </PullToRefresh>
+      {hasMore && <LoadMoreSentinel loading={loadingMore} onLoadMore={onLoadMore} rootRef={panelRef} />}
+    </div>
+  )
 }
 
 function App() {
@@ -117,12 +140,8 @@ function App() {
   const panel0Ref = useRef<HTMLDivElement>(null)
   const panel1Ref = useRef<HTMLDivElement>(null)
   const panel2Ref = useRef<HTMLDivElement>(null)
-  // ── 撕票根：打开 1 秒后 DateHeader 飞走消失，此后不再出现 ──
-  const [headerPhase, setHeaderPhase] = useState<'visible' | 'tearing' | 'gone'>('visible')
-  useEffect(() => {
-    const t1 = setTimeout(() => setHeaderPhase('tearing'), 1000)
-    return () => clearTimeout(t1)
-  }, [])
+  // ── 撕票根：CSS animation-delay 1s 后 DateHeader 飞走消失 ──
+  const [headerGone, setHeaderGone] = useState(false)
 
   // 切页时清除 carousel 过渡
   const prevIndexRef = useRef(activeIndex)
@@ -138,14 +157,14 @@ function App() {
   const goNext = useCallback(() => {
     setActiveTab((prev) => {
       const idx = tabToIndex(prev)
-      return TAB_ORDER[(idx + 1) % 3]
+      return TAB_VALUES[(idx + 1) % TAB_COUNT]
     })
   }, [])
 
   const goPrev = useCallback(() => {
     setActiveTab((prev) => {
       const idx = tabToIndex(prev)
-      return TAB_ORDER[(idx + 2) % 3]
+      return TAB_VALUES[(idx + 2) % TAB_COUNT]
     })
   }, [])
 
@@ -254,27 +273,17 @@ function App() {
 
   // 点击标签（先开过渡，再切页——React 18 批量合并，一次渲染同时生效）
   const handleTabClick = useCallback((value: string) => {
-    if (value === activeTab) return
     setEnableTransition(true)
     setSwipeOffset(0)
     setActiveTab(value as TabValue)
-  }, [activeTab])
+  }, [])
 
   return (
     <div className="h-dvh flex flex-col bg-background max-w-md mx-auto relative">
-      {/* 撕票根：visible → 1秒后 tearing（飞走）→ gone（消失，标签顶格） */}
-      {headerPhase !== 'gone' && (
-        <div
-          className="shrink-0"
-          style={{
-            overflow: 'hidden',
-            maxHeight: '200px',
-          }}
-        >
-          <div
-            className={headerPhase === 'tearing' ? 'animate-tear-off' : ''}
-            onAnimationEnd={() => setHeaderPhase('gone')}
-          >
+      {/* 撕票根：CSS animation-delay 1s 后飞走 */}
+      {!headerGone && (
+        <div className="shrink-0 overflow-hidden" style={{ maxHeight: '200px' }}>
+          <div className="animate-tear-off" onAnimationEnd={() => setHeaderGone(true)}>
             <DateHeader date={today} />
           </div>
         </div>
@@ -295,16 +304,16 @@ function App() {
                 transition: enableTransition ? 'left 0.3s ease-out' : 'none',
               }}
             />
-            {(['worldcup', 'daily', 'hot'] as const).map((tab) => (
+            {TABS.map((tab) => (
               <button
-                key={tab}
+                key={tab.value}
                 type="button"
-                onClick={() => handleTabClick(tab)}
+                onClick={() => handleTabClick(tab.value)}
                 className={`flex-1 text-sm rounded-md transition-colors relative z-10 ${
-                  activeTab === tab ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
+                  activeTab === tab.value ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {{ worldcup: '世界杯', daily: '每日消息', hot: '近期热点' }[tab]}
+                {tab.label}
               </button>
             ))}
           </div>
@@ -344,41 +353,18 @@ function App() {
               overflowAnchor: 'none',
             }}
           >
-            {/* Page 0: 世界杯 */}
-            <div
-              ref={panel0Ref}
-              className="flex-shrink-0 h-full overflow-y-auto overscroll-contain"
-              style={{ width: viewportWidth || '100%', WebkitOverflowScrolling: 'touch' }}
-            >
-              <PullToRefresh onRefresh={handleRefresh} scrollContainerRef={panel0Ref}>
-                <NewsList columns={2} news={worldcupNews} onCardClick={openReader} readUrls={readUrls} />
-              </PullToRefresh>
-              {hasMore && <LoadMoreSentinel loading={loadingMore} onLoadMore={loadMore} rootRef={panel0Ref} />}
-            </div>
-
-            {/* Page 1: 每日消息 */}
-            <div
-              ref={panel1Ref}
-              className="flex-shrink-0 h-full overflow-y-auto overscroll-contain"
-              style={{ width: viewportWidth || '100%', WebkitOverflowScrolling: 'touch' }}
-            >
-              <PullToRefresh onRefresh={handleRefresh} scrollContainerRef={panel1Ref}>
-                <NewsList columns={2} news={otherNews} onCardClick={openReader} readUrls={readUrls} />
-              </PullToRefresh>
-              {hasMore && <LoadMoreSentinel loading={loadingMore} onLoadMore={loadMore} rootRef={panel1Ref} />}
-            </div>
-
-            {/* Page 2: 近期热点 */}
-            <div
-              ref={panel2Ref}
-              className="flex-shrink-0 h-full overflow-y-auto overscroll-contain"
-              style={{ width: viewportWidth || '100%', WebkitOverflowScrolling: 'touch' }}
-            >
-              <PullToRefresh onRefresh={handleRefresh} scrollContainerRef={panel2Ref}>
-                <NewsList columns={2} news={hot} onCardClick={openReader} readUrls={readUrls} showFeatured />
-              </PullToRefresh>
-              {hasMore && <LoadMoreSentinel loading={loadingMore} onLoadMore={loadMore} rootRef={panel2Ref} />}
-            </div>
+            <CarouselPanel panelRef={panel0Ref} width={viewportWidth} onRefresh={handleRefresh}
+              hasMore={hasMore} loadingMore={loadingMore} onLoadMore={loadMore}>
+              <NewsList columns={2} news={worldcupNews} onCardClick={openReader} readUrls={readUrls} />
+            </CarouselPanel>
+            <CarouselPanel panelRef={panel1Ref} width={viewportWidth} onRefresh={handleRefresh}
+              hasMore={hasMore} loadingMore={loadingMore} onLoadMore={loadMore}>
+              <NewsList columns={2} news={otherNews} onCardClick={openReader} readUrls={readUrls} />
+            </CarouselPanel>
+            <CarouselPanel panelRef={panel2Ref} width={viewportWidth} onRefresh={handleRefresh}
+              hasMore={hasMore} loadingMore={loadingMore} onLoadMore={loadMore}>
+              <NewsList columns={2} news={hot} onCardClick={openReader} readUrls={readUrls} showFeatured />
+            </CarouselPanel>
           </div>
         )}
       </div>
