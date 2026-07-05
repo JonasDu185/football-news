@@ -13,11 +13,14 @@ import { SearchBar } from './components/SearchBar'
 import { BookmarkList } from './components/BookmarkList'
 import { useSearch } from './hooks/useSearch'
 import { useBookmarks } from './hooks/useBookmarks'
-import { SearchIcon, BookmarkIcon } from 'lucide-react'
+import { SearchIcon, BookmarkIcon, MenuIcon, SunIcon, MoonIcon, MonitorIcon, SettingsIcon } from 'lucide-react'
 import { Button } from './components/ui/button'
-import { ThemeToggle } from './components/ThemeToggle'
 import { useTheme } from './hooks/useTheme'
 import { BackToTop } from './components/BackToTop'
+import { Drawer } from './components/Drawer'
+import { PreferencePanel } from './components/PreferencePanel'
+import type { UserPreferences } from './components/PreferencePanel'
+import { useToast } from './components/Toast'
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import type { NewsItem } from './lib/newsFilter'
 
@@ -150,6 +153,22 @@ function App() {
 
   // 主题
   const { mode: themeMode, cycleTheme } = useTheme()
+
+  // 抽屉 & 偏好
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [preferenceOpen, setPreferenceOpen] = useState(false)
+  const [preferences, setPreferences] = useState<UserPreferences>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('football-preferences') || '{"leagues":[],"teams":[]}')
+    } catch { return { leagues: [], teams: [] } }
+  })
+  const { show: showToast } = useToast()
+
+  const handleSavePreferences = (prefs: UserPreferences) => {
+    setPreferences(prefs)
+    localStorage.setItem('football-preferences', JSON.stringify(prefs))
+    showToast('已保存，新功能随后上线')
+  }
 
   // 当前页索引：0=世界杯, 1=每日消息, 2=近期热点
   const activeIndex = tabToIndex(activeTab)
@@ -331,28 +350,23 @@ function App() {
         </div>
       )}
 
-      {/* 工具图标栏 */}
-      <div className="flex items-center justify-end px-3 py-1 gap-0.5">
-        <ThemeToggle mode={themeMode} onCycle={cycleTheme} />
-        <Button variant="ghost" size="icon" className="size-8" onClick={() => setBookmarkListOpen(true)} aria-label="收藏">
-          <BookmarkIcon className="size-4" />
-        </Button>
-        <Button variant="ghost" size="icon" className="size-8" onClick={() => setSearchOpen(!searchOpen)} aria-label="搜索">
-          <SearchIcon className="size-4" />
-        </Button>
-      </div>
-
       {/* 搜索栏 */}
       {searchOpen && (
         <SearchBar query={query} onChange={setQuery} onClose={() => { setSearchOpen(false); setQuery('') }} />
       )}
 
-      {/* 全局标签栏 — 搜索时隐藏 */}
+      {/* 全局标签栏 — 左右带按钮，搜索时隐藏 */}
       {!searchOpen && (
       <div className="bg-background z-20 relative">
-        <div className="px-4 pt-2 pb-2">
-          <div className="relative flex h-10 rounded-lg bg-muted p-1 overflow-hidden">
-            {/* 滑动指示器 — left 相对容器，避免 translateX 自身百分比叠加误差 */}
+        <div className="flex items-center gap-1 px-2 pt-2 pb-2">
+          {/* 左侧菜单按钮 */}
+          <Button variant="ghost" size="icon" className="size-8 shrink-0" onClick={() => setDrawerOpen(true)} aria-label="菜单">
+            <MenuIcon className="size-4" />
+          </Button>
+
+          {/* Tab 栏 */}
+          <div className="flex-1 relative flex h-10 rounded-lg bg-muted p-1 overflow-hidden mx-auto" style={{ maxWidth: viewportWidth > 0 ? viewportWidth - 80 : 'calc(100% - 80px)' }}>
+            {/* 滑动指示器 */}
             <div
               className="absolute top-1.5 h-7 rounded-lg bg-background shadow-sm"
               style={{
@@ -368,7 +382,7 @@ function App() {
                 key={tab.value}
                 type="button"
                 onClick={() => handleTabClick(tab.value)}
-                className={`flex-1 text-sm rounded-md transition-colors relative z-10 ${
+                className={`flex-1 text-xs rounded-md transition-colors relative z-10 ${
                   activeTab === tab.value ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
@@ -376,6 +390,11 @@ function App() {
               </button>
             ))}
           </div>
+
+          {/* 右侧搜索按钮 */}
+          <Button variant="ghost" size="icon" className="size-8 shrink-0" onClick={() => setSearchOpen(!searchOpen)} aria-label="搜索">
+            <SearchIcon className="size-4" />
+          </Button>
         </div>
       </div>
       )}
@@ -493,6 +512,52 @@ function App() {
           onBack={() => setBookmarkListOpen(false)}
           onCardClick={(item) => { setBookmarkListOpen(false); openReader(item) }}
           onClearAll={() => { if (confirm('确定清空所有收藏？')) bookmarks.forEach(b => removeBookmark(b.url)) }}
+        />
+      )}
+
+      {/* 左侧抽屉菜单 */}
+      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title="菜单">
+        {/* 深浅模式 */}
+        <button
+          type="button"
+          onClick={() => { cycleTheme() }}
+          className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors"
+        >
+          {themeMode === 'system' ? <MonitorIcon className="size-4 text-muted-foreground" />
+           : themeMode === 'dark' ? <MoonIcon className="size-4 text-muted-foreground" />
+           : <SunIcon className="size-4 text-muted-foreground" />}
+          <span>
+            {themeMode === 'system' ? '跟随系统' : themeMode === 'dark' ? '深色模式' : '浅色模式'}
+          </span>
+        </button>
+
+        {/* 稍后阅读 */}
+        <button
+          type="button"
+          onClick={() => { setDrawerOpen(false); setBookmarkListOpen(true) }}
+          className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors"
+        >
+          <BookmarkIcon className="size-4 text-muted-foreground" />
+          <span>稍后阅读{bookmarks.length > 0 ? ` (${bookmarks.length})` : ''}</span>
+        </button>
+
+        {/* 偏好设置 */}
+        <button
+          type="button"
+          onClick={() => { setPreferenceOpen(true) }}
+          className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors"
+        >
+          <SettingsIcon className="size-4 text-muted-foreground" />
+          <span>偏好设置</span>
+        </button>
+      </Drawer>
+
+      {/* 偏好设置面板 */}
+      {preferenceOpen && (
+        <PreferencePanel
+          preferences={preferences}
+          onSave={(prefs) => { handleSavePreferences(prefs) }}
+          onClose={() => setPreferenceOpen(false)}
         />
       )}
 

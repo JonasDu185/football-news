@@ -105,16 +105,17 @@ describe('App', () => {
     expect(bookmarkBtns.length).toBeGreaterThan(0)
   })
 
-  it('头部收藏图标可打开收藏列表', async () => {
+  it('通过抽屉菜单可打开收藏列表', async () => {
     render(<App />)
 
     await waitFor(() => {
       expect(screen.getByText('世界杯')).toBeInTheDocument()
     })
 
-    // 头部收藏按钮是第一个
-    const allBookmarks = screen.getAllByLabelText('收藏')
-    fireEvent.click(allBookmarks[0])
+    // 打开抽屉
+    fireEvent.click(screen.getByLabelText('菜单'))
+    // 点击"稍后阅读"
+    fireEvent.click(screen.getByText('稍后阅读'))
 
     await waitFor(() => {
       expect(screen.getByText('还没有收藏任何文章')).toBeInTheDocument()
