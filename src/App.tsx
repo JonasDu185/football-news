@@ -119,56 +119,22 @@ function App() {
   const panel2Ref = useRef<HTMLDivElement>(null)
   const panelRefs = [panel0Ref, panel1Ref, panel2Ref] as const
 
-  // ── 票根翻折：DateHeader 显隐状态全局一致，切页不改变 ──
-  const activeIndexRef = useRef(activeIndex)
-  useEffect(() => { activeIndexRef.current = activeIndex }, [activeIndex])
-  const headerVisibleRef = useRef(true)  // 全局：DateHeader 是否可见
-  const rafRef = useRef(0)
-
-  // 翻折：全局 DateHeader，由当前面板 scrollTop 驱动
-  const applyFold = useCallback((st: number) => {
-    const foldEl = document.querySelector('[data-header-fold]') as HTMLElement | null
-    const wrapEl = document.querySelector('[data-header-wrap]') as HTMLElement | null
-    const h = foldEl?.offsetHeight || 100
-    const progress = Math.max(0, Math.min(st / h, 1))
-    if (foldEl) {
-      foldEl.style.transform = progress > 0 ? `perspective(600px) rotateX(${progress * 50}deg)` : ''
-      foldEl.style.opacity = progress > 0 ? `${1 - progress}` : ''
-      foldEl.style.transformOrigin = 'bottom center'
-    }
-    if (wrapEl) {
-      wrapEl.style.maxHeight = progress > 0 ? `${h - progress * h}px` : ''
-      wrapEl.style.overflow = progress > 0 ? 'hidden' : 'visible'
-    }
-    headerVisibleRef.current = st < h
+  // ── 撕票根：打开 1 秒后 DateHeader 飞走消失，此后不再出现 ──
+  const [headerPhase, setHeaderPhase] = useState<'visible' | 'tearing' | 'gone'>('visible')
+  useEffect(() => {
+    const t1 = setTimeout(() => setHeaderPhase('tearing'), 1000)
+    return () => clearTimeout(t1)
   }, [])
 
-  const handlePanelScroll = useCallback(() => {
-    if (rafRef.current) return
-    rafRef.current = requestAnimationFrame(() => {
-      rafRef.current = 0
-      const panel = panelRefs[activeIndexRef.current].current
-      if (panel) applyFold(panel.scrollTop)
-    })
-  }, [applyFold])
-
-  // 切页：DateHeader 显隐状态不变 + 每页从顶端开始
+  // 切页时清除 carousel 过渡
   const prevIndexRef = useRef(activeIndex)
   useEffect(() => {
     if (prevIndexRef.current !== activeIndex) {
       prevIndexRef.current = activeIndex
-      const panel = panelRefs[activeIndex].current
-      // 读全局 DateHeader 高度
-      const h = document.querySelector('[data-header-fold]')?.offsetHeight || 100
-      if (panel) {
-        panel.scrollTop = headerVisibleRef.current ? 0 : h
-      }
-      // 立即应用折叠态
-      if (!headerVisibleRef.current) applyFold(h)
       const timer = setTimeout(() => setEnableTransition(false), 300)
       return () => clearTimeout(timer)
     }
-  }, [activeIndex, applyFold])
+  }, [activeIndex])
 
   // 标签切换逻辑（左滑 = 下一个，右滑 = 上一个）
   const goNext = useCallback(() => {
@@ -298,12 +264,24 @@ function App() {
 
   return (
     <div className="h-dvh flex flex-col bg-background max-w-md mx-auto relative">
-      {/* 全局 DateHeader — 滚动时翻折消失 */}
-      <div data-header-wrap className="shrink-0" style={{ overflow: 'visible' }}>
-        <div data-header-fold>
-          <DateHeader date={today} />
+      {/* 撕票根：visible → 1秒后 tearing（飞走）→ gone（消失，标签顶格） */}
+      {headerPhase !== 'gone' && (
+        <div
+          className="shrink-0"
+          style={{
+            overflow: 'hidden',
+            transition: headerPhase === 'gone' ? 'max-height 0.4s ease-out' : 'none',
+            maxHeight: headerPhase === 'gone' ? '0px' : '200px',
+          }}
+        >
+          <div
+            className={headerPhase === 'tearing' ? 'animate-tear-off' : ''}
+            onAnimationEnd={() => setHeaderPhase('gone')}
+          >
+            <DateHeader date={today} />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* 全局标签栏 — 固定不动，只有指示器跟手滑动 */}
       <div className="bg-background z-20 relative">
@@ -372,7 +350,6 @@ function App() {
             {/* Page 0: 世界杯 */}
             <div
               ref={panel0Ref}
-              onScroll={handlePanelScroll}
               className="flex-shrink-0 h-full overflow-y-auto overscroll-contain"
               style={{ width: viewportWidth || '100%', WebkitOverflowScrolling: 'touch' }}
             >
@@ -385,7 +362,6 @@ function App() {
             {/* Page 1: 每日消息 */}
             <div
               ref={panel1Ref}
-              onScroll={handlePanelScroll}
               className="flex-shrink-0 h-full overflow-y-auto overscroll-contain"
               style={{ width: viewportWidth || '100%', WebkitOverflowScrolling: 'touch' }}
             >
@@ -398,7 +374,6 @@ function App() {
             {/* Page 2: 近期热点 */}
             <div
               ref={panel2Ref}
-              onScroll={handlePanelScroll}
               className="flex-shrink-0 h-full overflow-y-auto overscroll-contain"
               style={{ width: viewportWidth || '100%', WebkitOverflowScrolling: 'touch' }}
             >

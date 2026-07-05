@@ -180,6 +180,22 @@
   margin-bottom: 0.5em;
 }
 
+/* 撕票根动画：票根加速上飞消失 */
+@keyframes tear-off {
+  0%   { transform: translateY(0) scale(1); opacity: 1; }
+  60%  { transform: translateY(-30px) scale(0.95); opacity: 0.6; }
+  100% { transform: translateY(-120px) scale(0.8); opacity: 0; }
+}
+.animate-tear-off {
+  animation: tear-off 0.6s ease-in forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-tear-off {
+    animation: none;
+    opacity: 0;
+  }
+}
+
 /* 卡片进场动画 */
 @keyframes card-enter {
   from {
