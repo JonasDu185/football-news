@@ -70,46 +70,80 @@ function App() {
   const [activeTab, setActiveTab] = useState('featured')  // 控制 Tabs 组件，配合横向滑动切换
   const { readUrls, markRead } = useReadHistory()
 
-  // 横向滑动切换标签：世界杯 → 其他赛事 → 近期热点 → 循环
+  // 横向滑动切换标签：世界杯 → 其他赛事 → 近期热点 → 循环（带跟手动画）
+  const [swipeOffset, setSwipeOffset] = useState(0)    // 水平偏移量（px）
+  const [swipeTransition, setSwipeTransition] = useState(false)  // 松手后是否开过渡动画
+  const suppressAnimRef = useRef(false)  // 横滑切换时抑制卡片进场动画（ref 避免触发重渲染）
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
+  const isSwipingRef = useRef(false)  // 是否已进入横滑模式
+
+  // 标签切换逻辑（左滑 = 下一个，右滑 = 上一个）
+  const goNext = useCallback(() => {
+    if (activeTab === 'featured' && worldcupFilter) setWorldcupFilter(false)
+    else if (activeTab === 'featured' && !worldcupFilter) setActiveTab('hot')
+    else { setActiveTab('featured'); setWorldcupFilter(true) }
+  }, [activeTab, worldcupFilter])
+
+  const goPrev = useCallback(() => {
+    if (activeTab === 'featured' && worldcupFilter) setActiveTab('hot')
+    else if (activeTab === 'featured' && !worldcupFilter) setWorldcupFilter(true)
+    else { setActiveTab('featured'); setWorldcupFilter(false) }
+  }, [activeTab, worldcupFilter])
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (reading) return
     touchStartX.current = e.touches[0].clientX
     touchStartY.current = e.touches[0].clientY
-  }, [])
+    isSwipingRef.current = false
+    setSwipeOffset(0)
+    setSwipeTransition(false)
+  }, [reading])
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (reading) return
+    const dx = e.touches[0].clientX - touchStartX.current
+    const dy = e.touches[0].clientY - touchStartY.current
+
+    // 水平位移 > 10px 且大于垂直位移时，进入横滑模式
+    if (!isSwipingRef.current) {
+      if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) {
+        isSwipingRef.current = true
+      } else return
+    }
+
+    // 边界阻力：世界杯左边界、近期热点右边界 → 0.3 倍阻力
+    let offset = dx
+    const atLeftEdge = activeTab === 'featured' && worldcupFilter
+    const atRightEdge = activeTab === 'hot'
+    if ((offset > 0 && atLeftEdge) || (offset < 0 && atRightEdge)) {
+      offset = offset * 0.3
+    }
+
+    setSwipeTransition(false)  // 跟手阶段：无过渡
+    setSwipeOffset(offset)
+  }, [reading, activeTab, worldcupFilter])
 
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (reading) return  // 阅读模式下不触发
+    if (!isSwipingRef.current) return
+    isSwipingRef.current = false
+
     const endX = e.changedTouches[0].clientX
-    const endY = e.changedTouches[0].clientY
     const dx = endX - touchStartX.current
-    const dy = endY - touchStartY.current
-    // 水平滑动且幅度足够大，且水平位移大于垂直位移（避免上下滚动误触发）
-    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
-      if (dx < 0) {
-        // 左滑 → 下一个标签
-        if (activeTab === 'featured' && worldcupFilter) {
-          setWorldcupFilter(false)  // 世界杯 → 其他赛事
-        } else if (activeTab === 'featured' && !worldcupFilter) {
-          setActiveTab('hot')  // 其他赛事 → 近期热点
-        } else {
-          setActiveTab('featured')
-          setWorldcupFilter(true)  // 近期热点 → 世界杯
-        }
-      } else {
-        // 右滑 → 上一个标签
-        if (activeTab === 'featured' && worldcupFilter) {
-          setActiveTab('hot')  // 世界杯 ← 近期热点
-        } else if (activeTab === 'featured' && !worldcupFilter) {
-          setWorldcupFilter(true)  // 其他赛事 ← 世界杯
-        } else {
-          setActiveTab('featured')
-          setWorldcupFilter(false)  // 近期热点 ← 其他赛事
-        }
-      }
+
+    setSwipeTransition(true)  // 松手阶段：开过渡动画
+
+    if (Math.abs(dx) > 60) {
+      // 滑动距离足够 → 切换标签 + 抑制进场动画
+      suppressAnimRef.current = true
+      if (dx < 0) goNext()
+      else goPrev()
+      // 微任务在本次渲染提交后立即复位，不触发额外重渲染
+      queueMicrotask(() => { suppressAnimRef.current = false })
     }
-  }, [reading, activeTab, worldcupFilter])
+    // 偏移归零（弹性回归 / 切换后归位）
+    setSwipeOffset(0)
+  }, [goNext, goPrev])
 
   // 每日精选按世界杯/其他拆分
   const { worldcupNews, otherNews } = useMemo(() => {
@@ -159,8 +193,9 @@ function App() {
 
   return (
     <div
-      className="min-h-screen bg-background max-w-md mx-auto relative overflow-x-hidden"
+      className="min-h-screen bg-background max-w-md mx-auto relative overflow-hidden"
       onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
       {/* 列表页——始终保留在文档流中，阅读模式下不隐藏（fixed 覆盖层盖住它） */}
@@ -217,8 +252,15 @@ function App() {
                   其他赛事
                 </button>
               </div>
-              <NewsList news={worldcupFilter ? worldcupNews : otherNews} onCardClick={openReader} readUrls={readUrls} />
-              {hasMore && <LoadMoreSentinel loading={loadingMore} onLoadMore={loadMore} />}
+              <div
+                style={{
+                  transform: `translateX(${swipeOffset}px)`,
+                  transition: swipeTransition ? 'transform 0.3s ease-out' : 'none',
+                }}
+              >
+                <NewsList news={worldcupFilter ? worldcupNews : otherNews} onCardClick={openReader} readUrls={readUrls} suppressAnim={suppressAnimRef.current} />
+                {hasMore && <LoadMoreSentinel loading={loadingMore} onLoadMore={loadMore} />}
+              </div>
             </>
           )}
         </TabsContent>
@@ -235,8 +277,15 @@ function App() {
             </div>
           ) : (
             <>
-              <NewsList news={hot} onCardClick={openReader} showFeatured />
-              {hasMore && <LoadMoreSentinel loading={loadingMore} onLoadMore={loadMore} />}
+              <div
+                style={{
+                  transform: `translateX(${swipeOffset}px)`,
+                  transition: swipeTransition ? 'transform 0.3s ease-out' : 'none',
+                }}
+              >
+                <NewsList news={hot} onCardClick={openReader} showFeatured suppressAnim={suppressAnimRef.current} />
+                {hasMore && <LoadMoreSentinel loading={loadingMore} onLoadMore={loadMore} />}
+              </div>
             </>
           )}
         </TabsContent>

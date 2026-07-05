@@ -9,6 +9,7 @@ export function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
   const [pulling, setPulling] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [pullDistance, setPullDistance] = useState(0)
+  const startX = useRef(0)
   const startY = useRef(0)
   const pullingRef = useRef(false)
 
@@ -17,6 +18,7 @@ export function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
   const handleTouchStart = useCallback((e: TouchEvent) => {
     // 只在页面滚动到顶部时才触发下拉
     if (window.scrollY > 5) return
+    startX.current = e.touches[0].clientX
     startY.current = e.touches[0].clientY
     pullingRef.current = true
   }, [])
@@ -24,10 +26,12 @@ export function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
   const handleTouchMove = useCallback(
     (e: TouchEvent) => {
       if (!pullingRef.current) return
-      const delta = e.touches[0].clientY - startY.current
-      if (delta > 10) {
+      const dx = e.touches[0].clientX - startX.current
+      const dy = e.touches[0].clientY - startY.current
+      // 仅当竖向位移 > 10px 且明显大于水平位移时才触发下拉（防止横滑误触发）
+      if (dy > 10 && dy > Math.abs(dx)) {
         setPulling(true)
-        setPullDistance(Math.min(delta * 0.5, 80))
+        setPullDistance(Math.min(dy * 0.5, 80))
       }
     },
     []

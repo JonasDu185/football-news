@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useLayoutEffect, useRef } from 'react'
 import type { NewsItem } from '@/lib/newsFilter'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -9,10 +9,20 @@ interface NewsCardProps {
   index?: number
   featured?: boolean
   isRead?: boolean
+  suppressAnim?: boolean
 }
 
-export function NewsCard({ news, onClick, index = 0, featured = false, isRead = false }: NewsCardProps) {
+export function NewsCard({ news, onClick, index = 0, featured = false, isRead = false, suppressAnim = false }: NewsCardProps) {
   const [imgError, setImgError] = useState(false)
+  const cardRef = useRef<HTMLDivElement>(null)
+
+  // 卡片首次挂载时添加进场动画（横滑切换时跳过，避免浮动效果）
+  useLayoutEffect(() => {
+    if (!suppressAnim && cardRef.current) {
+      cardRef.current.classList.add('card-enter')
+      ;(cardRef.current as HTMLElement).style.animationDelay = `${index * 60}ms`
+    }
+  }, [])  // 只在首次挂载时执行，不复跑
 
   const displayTags = news.tags
     .filter((t) => !['足球', '世界杯', '欧冠', '英超', '西甲', '德甲', '意甲', '法甲', '国家队'].includes(t))
@@ -21,10 +31,10 @@ export function NewsCard({ news, onClick, index = 0, featured = false, isRead = 
   const timeStr = news.time.length >= 16 ? news.time.slice(11, 16) : news.time
 
   const content = (
-    <Card
-      className="overflow-hidden border-border/50 bg-card hover:bg-secondary/30 transition-colors cursor-pointer card-enter relative"
-      style={{ animationDelay: `${index * 60}ms` }}
-    >
+    <div ref={cardRef}>
+      <Card
+        className="overflow-hidden border-border/50 bg-card hover:bg-secondary/30 transition-colors cursor-pointer relative"
+      >
       {/* 精选徽章 */}
       {featured && (
         <span className="absolute top-2 right-2 z-10 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wide">
@@ -64,6 +74,7 @@ export function NewsCard({ news, onClick, index = 0, featured = false, isRead = 
         </div>
       </CardContent>
     </Card>
+    </div>
   )
 
   if (onClick) {
