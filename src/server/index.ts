@@ -68,6 +68,37 @@ app.get('/api/news/article', async (req, res) => {
   res.json(article)
 })
 
+// 分享页：服务端渲染阅读模式 HTML，适用于微信 / 社交媒体分享
+app.get('/share', async (req, res) => {
+  const url = req.query.url as string
+  if (!url) {
+    const { renderErrorPage } = await import('./sharePage')
+    res.status(400).type('html').send(renderErrorPage('缺少文章地址'))
+    return
+  }
+
+  try {
+    const { getArticle } = await import('./articleCache')
+    const { renderArticlePage, renderErrorPage } = await import('./sharePage')
+    const article = await getArticle(url, store)
+
+    if (article.error || !article.content) {
+      res.type('html').send(renderErrorPage(article.error || '无法提取文章内容', url))
+      return
+    }
+
+    res.type('html').send(renderArticlePage({
+      title: article.title,
+      content: article.content,
+      sourceUrl: url,
+    }))
+  } catch (err) {
+    console.error('[share] 分享页渲染失败:', err instanceof Error ? err.message : err)
+    const { renderErrorPage } = await import('./sharePage')
+    res.status(500).type('html').send(renderErrorPage('服务器异常，请稍后重试', url))
+  }
+})
+
 // ===== 生产环境托管前端静态文件 =====
 app.use(express.static(DIST_PATH))
 app.get('/{*splat}', (_req, res) => {

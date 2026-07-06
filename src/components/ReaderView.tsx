@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import DOMPurify from 'dompurify'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ArrowLeftIcon, ExternalLinkIcon } from 'lucide-react'
+import { ArrowLeftIcon, ExternalLinkIcon, Share2Icon, CheckIcon } from 'lucide-react'
 
 interface ReaderViewProps {
   url: string           // 阅读模式提取的URL（优先直播吧）
@@ -45,6 +45,46 @@ function ReadingProgress() {
 export function ReaderView({ url, sourceUrl, sourceName, onBack }: ReaderViewProps) {
   const [article, setArticle] = useState<Article | null>(null)
   const [loading, setLoading] = useState(true)
+  const [shareFeedback, setShareFeedback] = useState<'idle' | 'shared' | 'copied'>('idle')
+
+  // 分享处理：优先用 Web Share API（弹出系统分享面板），不支持时复制链接
+  const handleShare = useCallback(async () => {
+    // 开发环境 Vite 代理 /share，生产环境 nginx 代理 /football/share
+    const sharePath = import.meta.env.DEV
+      ? `/share?url=${encodeURIComponent(url)}`
+      : `${import.meta.env.BASE_URL}share?url=${encodeURIComponent(url)}`
+    const shareUrl = `${window.location.origin}${sharePath}`
+    const shareTitle = article?.title || '分享一篇足球新闻'
+    const shareText = article?.title
+      ? `${article.title} — 来自足球新闻`
+      : '来自足球新闻的分享'
+
+    // 尝试 Web Share API（需要 HTTPS 或 localhost）
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: shareTitle, text: shareText, url: shareUrl })
+        setShareFeedback('shared')
+        setTimeout(() => setShareFeedback('idle'), 2000)
+        return
+      } catch (err) {
+        // Web Share 失败（如非安全上下文），降级到剪贴板
+        if (err instanceof Error && err.name !== 'AbortError') {
+          console.warn('[share] Web Share 失败，降级剪贴板:', err.message)
+        }
+      }
+    }
+
+    // 降级：复制链接到剪贴板
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      setShareFeedback('copied')
+      setTimeout(() => setShareFeedback('idle'), 2000)
+    } catch {
+      // 剪贴板也不可用，弹窗显示链接
+      window.prompt('复制链接分享：', shareUrl)
+      setShareFeedback('idle')
+    }
+  }, [url, article?.title])
 
   // 消毒 HTML，防止 XSS；给图片加防盗链绕过
   const cleanContent = useMemo(() => {
@@ -81,9 +121,22 @@ export function ReaderView({ url, sourceUrl, sourceName, onBack }: ReaderViewPro
     <div className="min-h-full bg-background">
       {/* 顶栏 */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border">
-        <div className="flex items-center gap-2 px-4 py-3">
+        <div className="flex items-center justify-between px-4 py-3">
           <Button variant="ghost" size="icon" className="size-8" onClick={onBack}>
             <ArrowLeftIcon className="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8"
+            onClick={handleShare}
+            aria-label="分享"
+          >
+            {shareFeedback === 'copied' ? (
+              <CheckIcon className="size-4 text-green-500" />
+            ) : (
+              <Share2Icon className="size-4" />
+            )}
           </Button>
         </div>
       </div>
