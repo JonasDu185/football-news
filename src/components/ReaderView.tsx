@@ -3,6 +3,7 @@ import DOMPurify from 'dompurify'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ArrowLeftIcon, ExternalLinkIcon, Share2Icon, CheckIcon } from 'lucide-react'
+import { SANITIZE_ALLOWED_TAGS, SANITIZE_ALLOWED_ATTR, addImgReferrerBypass } from '@/lib/sanitize'
 
 interface ReaderViewProps {
   url: string           // 阅读模式提取的URL（优先直播吧）
@@ -45,7 +46,7 @@ function ReadingProgress() {
 export function ReaderView({ url, sourceUrl, sourceName, onBack }: ReaderViewProps) {
   const [article, setArticle] = useState<Article | null>(null)
   const [loading, setLoading] = useState(true)
-  const [shareFeedback, setShareFeedback] = useState<'idle' | 'shared' | 'copied'>('idle')
+  const [shareFeedback, setShareFeedback] = useState<'idle' | 'copied'>('idle')
 
   // 分享处理：优先用 Web Share API（弹出系统分享面板），不支持时复制链接
   const handleShare = useCallback(async () => {
@@ -63,14 +64,11 @@ export function ReaderView({ url, sourceUrl, sourceName, onBack }: ReaderViewPro
     if (navigator.share) {
       try {
         await navigator.share({ title: shareTitle, text: shareText, url: shareUrl })
-        setShareFeedback('shared')
-        setTimeout(() => setShareFeedback('idle'), 2000)
         return
       } catch (err) {
-        // Web Share 失败（如非安全上下文），降级到剪贴板
-        if (err instanceof Error && err.name !== 'AbortError') {
-          console.warn('[share] Web Share 失败，降级剪贴板:', err.message)
-        }
+        // 用户取消分享 (AbortError) 不处理；其他错误降级到剪贴板
+        if (!(err instanceof Error) || err.name === 'AbortError') return
+        console.warn('[share] Web Share 失败，降级剪贴板:', err.message)
       }
     }
 
@@ -90,11 +88,10 @@ export function ReaderView({ url, sourceUrl, sourceName, onBack }: ReaderViewPro
   const cleanContent = useMemo(() => {
     if (!article?.content) return ''
     const sanitized = DOMPurify.sanitize(article.content, {
-      ALLOWED_TAGS: ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'img', 'video', 'source', 'a', 'ul', 'ol', 'li', 'blockquote', 'pre', 'code', 'strong', 'em', 'br', 'figure', 'figcaption'],
-      ALLOWED_ATTR: ['src', 'alt', 'href', 'target', 'rel', 'loading', 'referrerpolicy', 'controls', 'preload', 'poster', 'style'],
+      ALLOWED_TAGS: SANITIZE_ALLOWED_TAGS,
+      ALLOWED_ATTR: SANITIZE_ALLOWED_ATTR,
     })
-    // 给所有 img 加上 referrerpolicy="no-referrer"，绕过 CDN 防盗链
-    return sanitized.replace(/<img /g, '<img referrerpolicy="no-referrer" loading="lazy" ')
+    return addImgReferrerBypass(sanitized)
   }, [article?.content])
 
   useEffect(() => {

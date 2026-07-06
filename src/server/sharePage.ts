@@ -1,5 +1,6 @@
 import { JSDOM } from 'jsdom'
 import DOMPurify from 'dompurify'
+import { SANITIZE_ALLOWED_TAGS, SANITIZE_ALLOWED_ATTR, addImgReferrerBypass } from '../lib/sanitize'
 
 // 在模块加载时创建一个 JSDOM window 供 DOMPurify 使用
 const purifyWindow = new JSDOM('').window
@@ -18,20 +19,8 @@ function escapeHtml(str: string): string {
 /** 消毒文章正文，只保留安全标签 */
 function sanitizeContent(html: string): string {
   return purify.sanitize(html, {
-    ALLOWED_TAGS: [
-      'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-      'img', 'video', 'source',
-      'a', 'ul', 'ol', 'li',
-      'blockquote', 'pre', 'code',
-      'strong', 'em', 'b', 'i',
-      'br', 'figure', 'figcaption', 'span',
-    ],
-    ALLOWED_ATTR: [
-      'src', 'alt', 'href', 'target', 'rel',
-      'loading', 'referrerpolicy',
-      'controls', 'preload', 'poster',
-      'style', 'class',
-    ],
+    ALLOWED_TAGS: SANITIZE_ALLOWED_TAGS,
+    ALLOWED_ATTR: SANITIZE_ALLOWED_ATTR,
   })
 }
 
@@ -45,8 +34,7 @@ interface SharePageParams {
 export function renderArticlePage(params: SharePageParams): string {
   const { title, content, sourceUrl } = params
   const safeContent = sanitizeContent(content)
-  // 绕过防盗链：给所有 img 加 referrerpolicy
-  const finalContent = safeContent.replace(/<img /g, '<img referrerpolicy="no-referrer" loading="lazy" ')
+  const finalContent = addImgReferrerBypass(safeContent)
 
   return `<!DOCTYPE html>
 <html lang="zh-CN">
