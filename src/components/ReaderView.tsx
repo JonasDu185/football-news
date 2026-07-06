@@ -47,6 +47,15 @@ export function ReaderView({ url, sourceUrl, sourceName, onBack }: ReaderViewPro
   const [article, setArticle] = useState<Article | null>(null)
   const [loading, setLoading] = useState(true)
   const [shareFeedback, setShareFeedback] = useState<'idle' | 'copied'>('idle')
+  const [enableShare, setEnableShare] = useState(false)
+
+  // 检查分享功能是否启用
+  useEffect(() => {
+    fetch('/api/config')
+      .then(r => r.json())
+      .then(cfg => setEnableShare(cfg.enableShare))
+      .catch(() => setEnableShare(false))
+  }, [])
 
   // 分享处理：优先用 Web Share API（弹出系统分享面板），不支持时复制链接
   const handleShare = useCallback(async () => {
@@ -122,19 +131,21 @@ export function ReaderView({ url, sourceUrl, sourceName, onBack }: ReaderViewPro
           <Button variant="ghost" size="icon" className="size-8" onClick={onBack}>
             <ArrowLeftIcon className="size-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-8"
-            onClick={handleShare}
-            aria-label="分享"
-          >
-            {shareFeedback === 'copied' ? (
-              <CheckIcon className="size-4 text-green-500" />
-            ) : (
-              <Share2Icon className="size-4" />
-            )}
-          </Button>
+          {enableShare && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              onClick={handleShare}
+              aria-label="分享"
+            >
+              {shareFeedback === 'copied' ? (
+                <CheckIcon className="size-4 text-green-500" />
+              ) : (
+                <Share2Icon className="size-4" />
+              )}
+            </Button>
+          )}
         </div>
       </div>
 

@@ -9,6 +9,8 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3001,
+        // 分享功能开关：备案完成后改为 'true'，然后 pm2 restart
+        // ENABLE_SHARE: 'true',
       },
       // 日志
       log_date_format: 'YYYY-MM-DD HH:mm:ss',
