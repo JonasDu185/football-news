@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import DOMPurify from 'dompurify'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -10,6 +10,8 @@ interface ReaderViewProps {
   sourceUrl?: string | null  // 原文链接（外媒），显示在底部
   sourceName?: string   // 来源名称
   onBack: () => void
+  /** 滚动容器 ref，用于阅读进度条监听 */
+  scrollContainerRef?: React.RefObject<HTMLDivElement | null>
 }
 
 interface Article {
@@ -18,24 +20,31 @@ interface Article {
   error: string | null
 }
 
-/** 阅读进度条 */
-function ReadingProgress() {
+/** 阅读进度条 — 监听滚动容器的 scrollTop，挂载时立即计算一次 */
+function ReadingProgress({ scrollRef }: { scrollRef?: React.RefObject<HTMLDivElement | null> }) {
   const [progress, setProgress] = useState(0)
-
-  const handleScroll = useCallback(() => {
-    const scrollTop = window.scrollY
-    const docHeight = document.documentElement.scrollHeight - window.innerHeight
-    setProgress(docHeight > 0 ? Math.min(scrollTop / docHeight, 1) : 0)
-  }, [])
+  const barRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [handleScroll])
+    const el = scrollRef?.current
+    if (!el) return
+
+    // 挂载后立即执行一次进度计算
+    const calc = () => {
+      const scrollTop = el.scrollTop
+      const docHeight = el.scrollHeight - el.clientHeight
+      setProgress(docHeight > 0 ? Math.min(scrollTop / docHeight, 1) : 0)
+    }
+    calc()
+
+    el.addEventListener('scroll', calc, { passive: true })
+    return () => el.removeEventListener('scroll', calc)
+  }, [scrollRef])
 
   return (
-    <div className="sticky top-0 left-0 right-0 h-0.5 bg-muted z-20">
+    <div className="sticky top-0 left-0 right-0 z-20 h-0.5 bg-muted/30">
       <div
+        ref={barRef}
         className="h-full bg-primary transition-[width] duration-150 ease-out"
         style={{ width: `${progress * 100}%` }}
       />
@@ -43,7 +52,7 @@ function ReadingProgress() {
   )
 }
 
-export function ReaderView({ url, sourceUrl, sourceName, onBack }: ReaderViewProps) {
+export function ReaderView({ url, sourceUrl, sourceName, onBack, scrollContainerRef }: ReaderViewProps) {
   const [article, setArticle] = useState<Article | null>(null)
   const [loading, setLoading] = useState(true)
   const [shareFeedback, setShareFeedback] = useState<'idle' | 'copied'>('idle')
@@ -125,32 +134,29 @@ export function ReaderView({ url, sourceUrl, sourceName, onBack }: ReaderViewPro
 
   return (
     <div className="min-h-full bg-background">
-      {/* 顶栏 */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border">
-        <div className="flex items-center justify-between px-4 py-3">
-          <Button variant="ghost" size="icon" className="size-8" onClick={onBack}>
-            <ArrowLeftIcon className="size-4" />
+      {/* 阅读导航栏 — 52px，返回 + 居中标题 + 分享 */}
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur">
+        <div className="flex items-center h-[52px] px-3 border-b border-border/60">
+          {/* 左侧返回 */}
+          <Button variant="ghost" size="icon" className="size-9 shrink-0" onClick={onBack}>
+            <ArrowLeftIcon className="size-[18px]" />
           </Button>
-          {enableShare && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8"
-              onClick={handleShare}
-              aria-label="分享"
-            >
-              {shareFeedback === 'copied' ? (
-                <CheckIcon className="size-4 text-green-500" />
-              ) : (
-                <Share2Icon className="size-4" />
-              )}
-            </Button>
-          )}
+          {/* 中央标题 */}
+          <span className="flex-1 text-center text-[13px] text-muted-foreground font-medium select-none">阅读</span>
+          {/* 右侧分享 — 不可用时保持空位 */}
+          <div className="size-9 shrink-0 flex items-center justify-center">
+            {enableShare ? (
+              <Button variant="ghost" size="icon" className="size-9" onClick={handleShare} aria-label="分享">
+                {shareFeedback === 'copied'
+                  ? <CheckIcon className="size-[18px] text-green-500" />
+                  : <Share2Icon className="size-[18px]" />}
+              </Button>
+            ) : null}
+          </div>
         </div>
+        {/* 进度条 — 紧贴导航栏下方 */}
+        <ReadingProgress scrollRef={scrollContainerRef} />
       </div>
-
-      {/* 阅读进度条 */}
-      <ReadingProgress />
 
       {/* 内容 */}
       <div className="max-w-md mx-auto px-4 py-6">
@@ -180,7 +186,7 @@ export function ReaderView({ url, sourceUrl, sourceName, onBack }: ReaderViewPro
             {sourceName && (
               <p className="text-xs text-muted-foreground mb-3">来源：{sourceName}</p>
             )}
-            <h1 className="text-xl font-bold text-foreground font-heading mb-4">{article.title}</h1>
+            <h1 className="text-[22px] font-semibold leading-[1.35] text-foreground mb-4" style={{ fontFamily: 'var(--font-heading)' }}>{article.title}</h1>
             <div
               className="text-foreground/85 leading-relaxed text-[17px] reader-content"
               dangerouslySetInnerHTML={{ __html: cleanContent }}

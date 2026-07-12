@@ -13,9 +13,11 @@ interface NewsListProps {
   columns?: 1 | 2
   /** 单列模式也使用紧凑卡片样式 */
   forceCompact?: boolean
+  /** 卡片变体：card（默认卡片）| list（列表/阅读流） */
+  cardVariant?: 'card' | 'list'
 }
 
-export function NewsList({ news, onCardClick, showFeatured = false, readUrls, bookmarkedUrls, onToggleBookmark, columns = 1, forceCompact = false }: NewsListProps) {
+export function NewsList({ news, onCardClick, showFeatured = false, readUrls, bookmarkedUrls, onToggleBookmark, columns = 1, forceCompact = false, cardVariant = 'card' }: NewsListProps) {
   // 双列：按奇偶索引分左右列，保证左→右→左→右扫描顺序
   const { leftItems, rightItems } = useMemo(() => {
     if (columns === 1) return { leftItems: news, rightItems: [] as NewsItem[] }
@@ -47,6 +49,7 @@ export function NewsList({ news, onCardClick, showFeatured = false, readUrls, bo
               isBookmarked={bookmarkedUrls?.has(item.url ?? '')}
               onToggleBookmark={onToggleBookmark}
               compact
+              variant={cardVariant}
               onClick={() => onCardClick?.(item)}
             />
           ))}
@@ -61,6 +64,7 @@ export function NewsList({ news, onCardClick, showFeatured = false, readUrls, bo
               isBookmarked={bookmarkedUrls?.has(item.url ?? '')}
               onToggleBookmark={onToggleBookmark}
               compact
+              variant={cardVariant}
               onClick={() => onCardClick?.(item)}
             />
           ))}
@@ -70,9 +74,9 @@ export function NewsList({ news, onCardClick, showFeatured = false, readUrls, bo
   }
 
   return (
-    <div className="flex flex-col gap-3 px-4">
+    <div className={cardVariant === 'list' ? '' : 'flex flex-col gap-3 px-4'}>
       {news.map((item, index) => (
-        <NewsCard key={`${item.url ?? index}-${item.title}`} news={item} index={index} featured={showFeatured && index === 0} isRead={readUrls?.has(item.url ?? '')} isBookmarked={bookmarkedUrls?.has(item.url ?? '')} onToggleBookmark={onToggleBookmark} compact={forceCompact} onClick={() => onCardClick?.(item)} />
+        <NewsCard key={`${item.url ?? index}-${item.title}`} news={item} index={index} featured={showFeatured && index === 0} isRead={readUrls?.has(item.url ?? '')} isBookmarked={bookmarkedUrls?.has(item.url ?? '')} onToggleBookmark={onToggleBookmark} compact={forceCompact} variant={cardVariant} onClick={() => onCardClick?.(item)} />
       ))}
     </div>
   )

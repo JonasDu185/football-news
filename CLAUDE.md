@@ -95,23 +95,68 @@ npm run build && scp -r dist/ src/ football-news:/opt/football-news/ && ssh foot
 
 ```
 src/
-  lib/newsFilter.ts        # 数据过滤、排序、字段标准化、源名推断
+  lib/
+    newsFilter.ts           # 数据过滤、字段标准化、源名推断
+    feedRanker.ts           # 每日消息智能混排引擎（时间+偏好+热度+已读+打散）
   server/
-    index.ts               # Express API + 定时任务
-    fetcher.ts             # 直播吧 JSON 抓取
-    storage.ts             # SQLite CRUD + 清理
-    reader.ts              # 文章正文提取（Readability）
+    index.ts                # Express API + 定时任务
+    fetcher.ts              # 直播吧 JSON 抓取
+    storage.ts              # SQLite CRUD + 清理
+    reader.ts               # 文章正文提取（Readability）
   components/
-    NewsCard.tsx           # 新闻卡片（支持 compact 瀑布流模式）
-    NewsList.tsx           # 新闻列表（支持 columns=2 瀑布流双列）
-    DateHeader.tsx         # 日期顶栏
-    ReaderView.tsx         # 阅读模式视图
-    PullToRefresh.tsx      # 下拉刷新（支持自定义 scrollContainerRef）
-    LoadMoreSentinel.tsx   # 无限滚动哨兵（支持自定义 IntersectionObserver root）
-    ui/                    # shadcn 组件
-  hooks/useNews.ts         # 前端数据加载
-  App.tsx                  # 主页面：
-                           #   全局 DateHeader（折叠 JS + DOM）+ 全局 Tabs（滑动指示器）
-                           #   Carousel：三面板纯新闻，ResizeObserver 像素定位 + 横滑跟手
-                           #   headerVisibleRef 全局追踪折叠态，切页保持一致性
+    NewsCard.tsx            # 新闻卡片（card 模式：图片+标题+元信息，无 Card 壳）
+    NewsList.tsx            # 新闻列表（columns=1/2）
+    NewsPanels.tsx          # 三个频道的共享面板渲染（消除 App.tsx 两处重复）
+    HotEditorialFeed.tsx    # 近期热点编辑首页（头条 → 双次头条 → 持续关注）
+    NewsSkeleton.tsx        # 双列骨架屏
+    CarouselPanel.tsx       # 轮播面板：独立滚动 + 独立底色 + 下拉刷新 + 无限滚动
+    DateHeader.tsx          # 日期顶栏（撕票根动画）
+    ReaderView.tsx          # 阅读模式视图（进度条监听滚动容器）
+    PullToRefresh.tsx       # 下拉刷新
+    LoadMoreSentinel.tsx    # 无限滚动哨兵
+    PreferencePanel.tsx     # 偏好设置（联赛+球队）
+    BookmarkList.tsx        # 收藏列表
+    SearchBar.tsx           # 搜索栏
+    Drawer.tsx              # 侧滑抽屉
+    Toast.tsx               # Toast 提示
+    ui/                     # shadcn 组件
+  hooks/
+    useNewsFeed.ts          # 新闻分页加载
+    useReadHistory.ts       # 已读记录（localStorage 持久化）
+    useSearch.ts            # 搜索逻辑
+    useBookmarks.ts         # 收藏逻辑
+    useTheme.ts             # 主题切换
+  App.tsx                   # 主页面：
+                            #   全局 DateHeader + Tabs + Carousel 三面板
+                            #   每日消息 = 智能混排双列瀑布流
+                            #   近期热点 = 单列阅读流（list 模式）
+                            #   世界杯 = 时间序双列瀑布流
 ```
+
+## 视觉系统
+
+- **风格**: 专业体育媒体风 — 纸感暖白底 + 石墨黑文字 + 深草坪绿强调色
+- **色彩**: 背景 `#F7F7F4`，文字 `#171A18`，次要 `#6E746F`，分割线 `#E3E5E0`，强调 `#1F5A42`
+- **字体**: 标题优先宋体/衬线 `Noto Serif SC → Songti SC → STSong`，正文 `Geist Variable → PingFang SC`
+- **圆角**: 全局 4px（`--radius: 0.25rem`），图片 5px
+- **卡片**: 不用 shadcn Card 组件，图片+标题+元信息自然排布，无阴影，靠留白区分
+- **Tab**: 编辑导航风格——石墨黑文字 + 深草坪绿下划线（2px），底部淡暖灰分割线
+- **热度**: 等级化标签（热议/高热/持续关注），不展示原始数字
+- **已读**: 标题降低对比度 + 图片降低饱和度和透明度（opacity-60 saturate-50）
+
+## 每日消息智能混排
+
+排序公式: `score = timeScore + preferenceScore × 0.35 + hotScore × 0.2 - readPenalty(0.35)`
+
+- `timeScore`: 指数衰减 `2^(-hours/6)`，保证新鲜度
+- `preferenceScore`: 标签/标题命中数（上限3），偏好内容上浮但不过滤
+- `hotScore`: `log10(count+1)/7` 归一化到 0~1
+- `readPenalty`: 已读固定扣分（下沉但不消失）
+- 打散: 同源最多连续 2 条
+
+排序逻辑封装在 `lib/feedRanker.ts`，参数可调，有 23 个单测。
+
+## 阅读模式进度条
+
+- 滚动容器是 `fixed` 覆盖层（body overflow:hidden），window 不会触发 scroll
+- 通过 `scrollContainerRef` 传递给 `ReadingProgress`，监听容器 scrollTop 而非 window.scrollY

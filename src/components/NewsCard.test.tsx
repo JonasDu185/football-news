@@ -20,7 +20,7 @@ describe('NewsCard', () => {
 
     expect(screen.getByText('德国点球4-5遭巴拉圭淘汰')).toBeInTheDocument()
     expect(screen.getByText(/直播吧/)).toBeInTheDocument()
-    expect(screen.getByText(/07:28/)).toBeInTheDocument()
+    expect(screen.getByText(/6\.30/)).toBeInTheDocument()
   })
 
   it('显示标签徽章（排除大类标签）', () => {

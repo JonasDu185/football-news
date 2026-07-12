@@ -6,8 +6,8 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
-    /* 字体：标题衬线体，正文无衬线体 */
-    --font-heading: 'PingFang SC', 'Noto Serif SC', 'Songti SC', 'Source Han Serif SC', serif;
+    /* 字体：标题用宋体/衬线体，正文无衬线体 */
+    --font-heading: 'Noto Serif SC', 'Songti SC', 'Source Han Serif SC', 'PingFang SC', 'STSong', serif;
     --font-sans: 'Geist Variable', 'Inter', 'PingFang SC', 'Noto Sans SC', system-ui, sans-serif;
     --font-mono: 'JetBrains Mono', 'Menlo', 'Consolas', monospace;
 
@@ -51,85 +51,85 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* ── 看台主题 · 纸票（浅色） ── */
+/* ── 专业体育媒体风 · 浅色主题 ── */
 :root {
-    --background: oklch(0.97 0.01 85);
-    /* #F7F3ED 票根纸暖白 */
-    --foreground: oklch(0.15 0.01 85);
-    /* #1A1A1A 油墨黑 */
-    --card: oklch(0.995 0 85);
-    /* #FFFFFF 白卡片 */
-    --card-foreground: oklch(0.15 0.01 85);
-    --popover: oklch(0.995 0 85);
-    --popover-foreground: oklch(0.15 0.01 85);
-    --primary: oklch(0.58 0.22 28);
-    /* #E6482E 哨红 — 不变 */
-    --primary-foreground: oklch(0.99 0 0);
-    /* 白字 */
-    --secondary: oklch(0.94 0.01 85);
-    /* #E5E0D8 暖灰底 */
-    --secondary-foreground: oklch(0.15 0.01 85);
-    --muted: oklch(0.94 0.01 85);
-    --muted-foreground: oklch(0.55 0.01 85);
-    /* #8B8580 暖灰字 */
-    --accent: oklch(0.58 0.22 28);
-    /* 哨红 */
-    --accent-foreground: oklch(0.99 0 0);
-    --destructive: oklch(0.58 0.25 28);
-    --border: oklch(0.89 0.015 85);
-    /* 淡暖灰边框 */
-    --input: oklch(0.94 0.01 85);
-    --ring: oklch(0.58 0.22 28);
-    /* 哨红光环 */
-    --chart-1: oklch(0.58 0.22 28);
-    --chart-2: oklch(0.55 0.01 85);
-    --chart-3: oklch(0.94 0.01 85);
-    --chart-4: oklch(0.89 0.015 85);
-    --chart-5: oklch(0.97 0.01 85);
-    --radius: 0.5rem;
-    --sidebar: oklch(0.97 0.01 85);
-    --sidebar-foreground: oklch(0.15 0.01 85);
-    --sidebar-primary: oklch(0.58 0.22 28);
-    --sidebar-primary-foreground: oklch(0.99 0 0);
-    --sidebar-accent: oklch(0.94 0.01 85);
-    --sidebar-accent-foreground: oklch(0.15 0.01 85);
-    --sidebar-border: oklch(0.89 0.015 85);
-    --sidebar-ring: oklch(0.58 0.22 28);
+    /* 纸感暖白底 + 石墨黑文字 */
+    --background: #F7F7F4;
+    --foreground: #171A18;
+    /* 卡片色 */
+    --card: #FCFCFA;
+    --card-foreground: #171A18;
+    --popover: #FCFCFA;
+    --popover-foreground: #171A18;
+    /* 深草坪绿 */
+    --primary: #1F5A42;
+    --primary-foreground: #FFFFFF;
+    /* 次要底色 */
+    --secondary: #EDEDEA;
+    --secondary-foreground: #171A18;
+    /* 静默区 */
+    --muted: #EDEDEA;
+    --muted-foreground: #6E746F;
+    /* 强调色 */
+    --accent: #1F5A42;
+    --accent-foreground: #FFFFFF;
+    --destructive: #C0392B;
+    /* 细分割线 */
+    --border: #E3E5E0;
+    --input: #EDEDEA;
+    --ring: #1F5A42;
+    /* 图表 */
+    --chart-1: #1F5A42;
+    --chart-2: #6E746F;
+    --chart-3: #EDEDEA;
+    --chart-4: #E3E5E0;
+    --chart-5: #F7F7F4;
+    /* 紧凑圆角 */
+    --radius: 0.25rem;
+    /* Sidebar */
+    --sidebar: #F7F7F4;
+    --sidebar-foreground: #171A18;
+    --sidebar-primary: #1F5A42;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #EDEDEA;
+    --sidebar-accent-foreground: #171A18;
+    --sidebar-border: #E3E5E0;
+    --sidebar-ring: #1F5A42;
 }
 
-/* ── 看台主题 · 球场夜（深色）── */
+/* ── 专业体育媒体风 · 深色主题 ── */
 .dark {
-  --background: oklch(0.15 0.02 255);
-  --foreground: oklch(0.93 0.01 255);
-  --card: oklch(0.22 0.03 255);
-  --card-foreground: oklch(0.93 0.01 255);
-  --popover: oklch(0.22 0.03 255);
-  --popover-foreground: oklch(0.93 0.01 255);
-  --primary: oklch(0.58 0.22 28);
-  --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.24 0.03 255);
-  --secondary-foreground: oklch(0.93 0.01 255);
-  --muted: oklch(0.22 0.03 255);
-  --muted-foreground: oklch(0.62 0.03 255);
-  --accent: oklch(0.58 0.22 28);
-  --accent-foreground: oklch(0.99 0 0);
-  --destructive: oklch(0.58 0.25 28);
-  --border: oklch(0.24 0.03 255);
-  --input: oklch(0.24 0.03 255);
-  --ring: oklch(0.58 0.22 28);
-  --chart-1: oklch(0.58 0.22 28);
-  --chart-2: oklch(0.62 0.03 255);
-  --chart-3: oklch(0.22 0.03 255);
-  --chart-4: oklch(0.24 0.03 255);
-  --chart-5: oklch(0.15 0.02 255);
-  --sidebar: oklch(0.15 0.02 255);
-  --sidebar-foreground: oklch(0.93 0.01 255);
-  --sidebar-primary: oklch(0.58 0.22 28);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.22 0.03 255);
-  --sidebar-accent-foreground: oklch(0.93 0.01 255);
-  --sidebar-border: oklch(0.24 0.03 255);
-  --sidebar-ring: oklch(0.58 0.22 28);
+  --background: #1A1D1C;
+  --foreground: #E5E7E4;
+  --card: #242826;
+  --card-foreground: #E5E7E4;
+  --popover: #242826;
+  --popover-foreground: #E5E7E4;
+  --primary: #2D8A5E;
+  --primary-foreground: #FFFFFF;
+  --secondary: #2A2E2C;
+  --secondary-foreground: #E5E7E4;
+  --muted: #2A2E2C;
+  --muted-foreground: #909892;
+  --accent: #2D8A5E;
+  --accent-foreground: #FFFFFF;
+  --destructive: #E74C3C;
+  --border: #363A37;
+  --input: #2A2E2C;
+  --ring: #2D8A5E;
+  --chart-1: #2D8A5E;
+  --chart-2: #909892;
+  --chart-3: #2A2E2C;
+  --chart-4: #363A37;
+  --chart-5: #1A1D1C;
+  --sidebar: #1A1D1C;
+  --sidebar-foreground: #E5E7E4;
+  --sidebar-primary: #2D8A5E;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #2A2E2C;
+  --sidebar-accent-foreground: #E5E7E4;
+  --sidebar-border: #363A37;
+  --sidebar-ring: #2D8A5E;
 }
 
 /* 页面首次加载时，在 JS 运行前用系统偏好避免闪烁 */
@@ -152,10 +152,10 @@
     height: 100%;
     overflow: hidden;  /* body 不滚动，面板独立 overflow-y:auto */
   }
-  /* 标题用衬线体，克制使用 */
+  /* 标题用宋体/衬线体 */
   h1, h2, h3 {
     font-family: var(--font-heading);
-    @apply font-medium tracking-tight;
+    @apply font-semibold tracking-normal;
   }
 }
 
@@ -167,7 +167,7 @@
 .reader-content img {
   max-width: 100%;
   height: auto;
-  border-radius: 0.5rem;
+  border-radius: 0.25rem;
   margin: 1em 0;
 }
 .reader-content a {
@@ -175,7 +175,7 @@
   text-decoration: underline;
 }
 .reader-content blockquote {
-  border-left: 3px solid var(--color-primary);
+  border-left: 2px solid var(--color-primary);
   padding-left: 1em;
   margin: 1em 0;
   color: var(--color-muted-foreground);
@@ -183,6 +183,7 @@
 .reader-content h2, .reader-content h3 {
   margin-top: 1.5em;
   margin-bottom: 0.5em;
+  font-family: var(--font-heading);
 }
 
 /* 撕票根动画：票根加速上飞消失 */

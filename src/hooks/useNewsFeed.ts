@@ -48,6 +48,9 @@ export function useNewsFeed(endpoint: string, pageSize = PAGE_SIZE): NewsFeedSta
   const [loadingMore, setLoadingMore] = useState(false)
   const offsetRef = useRef(0)
   const abortRef = useRef<AbortController | null>(null)
+  // 用 ref 追踪 items 最新值，避免在 doFetch 依赖中加入 items.length
+  const itemsRef = useRef(items)
+  itemsRef.current = items
 
   const doFetch = useCallback(
     async (offset: number, append: boolean) => {
@@ -79,7 +82,7 @@ export function useNewsFeed(endpoint: string, pageSize = PAGE_SIZE): NewsFeedSta
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') return
 
-        setError(classifyError(err, !append && items.length === 0))
+        setError(classifyError(err, !append && itemsRef.current.length === 0))
         setLoading(false)
         setLoadingMore(false)
       }
