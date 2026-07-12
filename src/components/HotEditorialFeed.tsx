@@ -1,40 +1,17 @@
 import { useState } from 'react'
 import type { NewsItem } from '@/lib/newsFilter'
 import { BookmarkButton } from './BookmarkButton'
+import { formatNewsTime, formatNewsHeat, pickDisplayTags } from '@/lib/utils'
 
 interface HotEditorialFeedProps {
   news: NewsItem[]
   onCardClick: (item: NewsItem) => void
-  readUrls: Set<string>
   bookmarkedUrls: Set<string>
   onToggleBookmark: (item: NewsItem) => void
 }
 
-// ===== 工具函数 =====
-
-function formatHeat(count: number): string | null {
-  if (count <= 0) return null
-  if (count >= 10000) return `${(count / 10000).toFixed(0)}万`
-  return `${count}`
-}
-
-function pickTags(tags: string[], max: number): string[] {
-  const excluded = new Set([
-    '足球', '世界杯', '欧冠', '英超', '西甲', '德甲', '意甲', '法甲',
-    '国家队', '转载', '话题',
-  ])
-  return tags.filter((t) => !excluded.has(t)).slice(0, max)
-}
-
-function fmtTime(time: string): string {
-  const m = time.match(/^(\d{4})-(\d{2})-(\d{2})/)
-  if (!m) return time.length >= 10 ? time.slice(5, 10) : time
-  return `${parseInt(m[2], 10)}.${parseInt(m[3], 10)}`
-}
-
 // ===== 子组件 =====
 
-/** 页面标题 */
 function SectionTitle({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <div className="px-4 pt-3 pb-4">
@@ -44,7 +21,6 @@ function SectionTitle({ title, subtitle }: { title: string; subtitle: string }) 
   )
 }
 
-/** 持续关注分隔 */
 function Divider() {
   return (
     <div className="px-4 pt-6 pb-3">
@@ -56,9 +32,8 @@ function Divider() {
   )
 }
 
-/** 元信息行 — 左下时间，右下纯数字热度 */
 function MetaRow({ time, count }: { time: string; count: number }) {
-  const hl = formatHeat(count)
+  const hl = formatNewsHeat(count)
   return (
     <div className="flex items-center justify-between text-[11px] text-muted-foreground/70">
       <time dateTime={time} className="shrink-0">{time}</time>
@@ -67,7 +42,6 @@ function MetaRow({ time, count }: { time: string; count: number }) {
   )
 }
 
-/** 标签行 */
 function TagRow({ tags }: { tags: string[] }) {
   if (tags.length === 0) return null
   return (
@@ -77,47 +51,69 @@ function TagRow({ tags }: { tags: string[] }) {
   )
 }
 
-// ===== 头条 =====
+// ===== 头条 — 标题叠加到图片内 =====
 
-function LeadStory({ item, isRead, isBookmarked, onClick, onToggleBookmark }: {
-  item: NewsItem; isRead: boolean; isBookmarked: boolean
+function LeadStory({ item, isBookmarked, onClick, onToggleBookmark }: {
+  item: NewsItem; isBookmarked: boolean
   onClick: () => void; onToggleBookmark: (item: NewsItem) => void
 }) {
   const [imgError, setImgError] = useState(false)
-  const tags = pickTags(item.tags, 3)
-  const time = fmtTime(item.time)
+  const tags = pickDisplayTags(item.tags, 3)
+  const time = formatNewsTime(item.time)
+  const handleToggle = () => onToggleBookmark(item)
 
   return (
     <div className="px-4 pb-5">
-      <button type="button" onClick={onClick} className="block w-full text-left no-underline bg-transparent border-0 p-0 group">
-        {/* 图片 */}
+      <div className="relative">
+        <button type="button" onClick={onClick} className="block w-full text-left no-underline bg-transparent border-0 p-0">
+          {item.thumb && !imgError ? (
+            <div className="relative w-full aspect-[16/10] rounded-[6px] overflow-hidden bg-muted/50">
+              <img src={item.thumb} alt="" loading="lazy" referrerPolicy="no-referrer"
+                className="w-full h-full object-cover"
+                onError={() => setImgError(true)} />
+              {/* 磨砂标题栏：半透明深色 + backdrop-filter，高度随标题自动撑开 */}
+              <div
+                className="absolute inset-x-0 bottom-0 px-3 py-2.5"
+                style={{
+                  background: 'linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.48) 35%)',
+                }}
+              >
+                <h2 className="text-[21px] leading-[1.3] font-semibold text-white break-words"
+                  style={{ textShadow: '0 1px 2px rgba(0,0,0,0.42)' }}>
+                  {item.title}
+                </h2>
+              </div>
+            </div>
+          ) : (
+            <div className="relative w-full aspect-[16/10] rounded-[6px] bg-muted/50 flex items-end">
+              <div className="px-3 pb-3">
+                <h2 className="text-[21px] leading-[1.3] font-semibold text-foreground break-words">
+                  {item.title}
+                </h2>
+              </div>
+            </div>
+          )}
+        </button>
+
+        {/* 收藏按钮 — 与主点击区同级 */}
+        <BookmarkButton isBookmarked={isBookmarked} compact onClick={handleToggle} />
+
+        {/* 图外辅助信息 */}
         {item.thumb && !imgError && (
-          <div className="relative w-full aspect-[16/10] rounded-[6px] overflow-hidden bg-muted/50 mb-3">
-            <img src={item.thumb} alt="" loading="lazy" referrerPolicy="no-referrer"
-              className={`w-full h-full object-cover transition-opacity ${isRead ? 'opacity-60 saturate-50' : 'group-hover:opacity-90'}`}
-              onError={() => setImgError(true)} />
-            {onToggleBookmark && (
-              <BookmarkButton isBookmarked={isBookmarked} compact onClick={() => onToggleBookmark(item)} />
-            )}
+          <div className="mt-2.5">
+            <TagRow tags={tags} />
+            <MetaRow time={time} count={item.count} />
           </div>
         )}
-        {/* 标签 */}
-        <TagRow tags={tags} />
-        {/* 标题 */}
-        <h2 className={`text-[22px] leading-[1.3] font-semibold mb-2 ${isRead ? 'text-muted-foreground/60' : 'text-foreground'}`}>
-          {item.title}
-        </h2>
-        {/* 元信息 */}
-        <MetaRow time={time} count={item.count} />
-      </button>
+      </div>
     </div>
   )
 }
 
-// ===== 双次头条 =====
+// ===== 双次头条 — 标题叠加 + 收藏外置 =====
 
-function SecondaryStories({ items, readUrls, bookmarkedUrls, onClick, onToggleBookmark }: {
-  items: NewsItem[]; readUrls: Set<string>; bookmarkedUrls: Set<string>
+function SecondaryStories({ items, bookmarkedUrls, onClick, onToggleBookmark }: {
+  items: NewsItem[]; bookmarkedUrls: Set<string>
   onClick: (item: NewsItem) => void; onToggleBookmark: (item: NewsItem) => void
 }) {
   if (items.length === 0) return null
@@ -126,96 +122,115 @@ function SecondaryStories({ items, readUrls, bookmarkedUrls, onClick, onToggleBo
       <div className="flex gap-3">
         {items.map((item) => (
           <SecondaryCard key={item.url ?? item.title} item={item}
-            isRead={readUrls.has(item.url ?? '')}
             isBookmarked={bookmarkedUrls.has(item.url ?? '')}
             onClick={() => onClick(item)}
             onToggleBookmark={onToggleBookmark} />
         ))}
-        {/* 单条时占位保持宽度 */}
         {items.length === 1 && <div className="flex-1" />}
       </div>
     </div>
   )
 }
 
-function SecondaryCard({ item, isRead, isBookmarked, onClick, onToggleBookmark }: {
-  item: NewsItem; isRead: boolean; isBookmarked: boolean
+function SecondaryCard({ item, isBookmarked, onClick, onToggleBookmark }: {
+  item: NewsItem; isBookmarked: boolean
   onClick: () => void; onToggleBookmark: (item: NewsItem) => void
 }) {
   const [imgError, setImgError] = useState(false)
-  const tags = pickTags(item.tags, 2)
-  const time = fmtTime(item.time)
+  const tags = pickDisplayTags(item.tags, 2)
+  const time = formatNewsTime(item.time)
+  const handleToggle = () => onToggleBookmark(item)
 
   return (
-    <button type="button" onClick={onClick} className="flex-1 text-left no-underline bg-transparent border-0 p-0 group min-w-0">
-      {item.thumb && !imgError ? (
-        <div className="relative w-full aspect-[4/3] rounded-[5px] overflow-hidden bg-muted/50 mb-2">
-          <img src={item.thumb} alt="" loading="lazy" referrerPolicy="no-referrer"
-            className={`w-full h-full object-cover transition-opacity ${isRead ? 'opacity-60 saturate-50' : 'group-hover:opacity-90'}`}
-            onError={() => setImgError(true)} />
-          {onToggleBookmark && (
-            <BookmarkButton isBookmarked={isBookmarked} compact onClick={() => onToggleBookmark(item)} />
-          )}
+    <div className="flex-1 min-w-0 relative">
+      {/* 图片 + 叠加标题 */}
+      <button type="button" onClick={onClick} className="block w-full text-left no-underline bg-transparent border-0 p-0">
+        {item.thumb && !imgError ? (
+          <div className="relative w-full aspect-[4/3] rounded-[5px] overflow-hidden bg-muted/50">
+            <img src={item.thumb} alt="" loading="lazy" referrerPolicy="no-referrer"
+              className="w-full h-full object-cover"
+              onError={() => setImgError(true)} />
+            <div
+              className="absolute inset-x-0 bottom-0 px-2 py-[7px]"
+              style={{
+                background: 'linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.48) 35%)',
+              }}
+            >
+              <h3 className="text-[13px] leading-[1.35] font-semibold text-white break-words"
+                style={{ textShadow: '0 1px 2px rgba(0,0,0,0.42)' }}>
+                {item.title}
+              </h3>
+            </div>
+          </div>
+        ) : (
+          <div className="relative w-full aspect-[4/3] rounded-[5px] bg-muted/50 flex items-end">
+            <div className="px-2 pb-2">
+              <h3 className="text-[13px] leading-[1.35] font-semibold text-foreground break-words">
+                {item.title}
+              </h3>
+            </div>
+          </div>
+        )}
+      </button>
+
+      {/* 收藏按钮 — 与主点击区同级 */}
+      <BookmarkButton isBookmarked={isBookmarked} compact onClick={handleToggle} />
+
+      {/* 图外辅助信息 */}
+      {item.thumb && !imgError && (
+        <div className="mt-1.5">
+          <TagRow tags={tags} />
+          <MetaRow time={time} count={item.count} />
         </div>
-      ) : (
-        <div className="relative w-full aspect-[4/3] rounded-[5px] bg-muted/50 mb-2" />
       )}
-      <TagRow tags={tags} />
-      <h3 className={`text-[13px] leading-[1.38] font-semibold mb-1 line-clamp-2 ${isRead ? 'text-muted-foreground/60' : 'text-foreground'}`}>
-        {item.title}
-      </h3>
-      <MetaRow time={time} count={item.count} />
-    </button>
+    </div>
   )
 }
 
-// ===== 持续关注列表项 =====
+// ===== 持续关注列表项 — 不变 =====
 
-function ListItem({ item, isRead, isBookmarked, onClick, onToggleBookmark }: {
-  item: NewsItem; isRead: boolean; isBookmarked: boolean
+function ListItem({ item, isBookmarked, onClick, onToggleBookmark }: {
+  item: NewsItem; isBookmarked: boolean
   onClick: () => void; onToggleBookmark: (item: NewsItem) => void
 }) {
   const [imgError, setImgError] = useState(false)
-  const tags = pickTags(item.tags, 2)
-  const time = fmtTime(item.time)
-  const hl = formatHeat(item.count)
+  const tags = pickDisplayTags(item.tags, 2)
+  const time = formatNewsTime(item.time)
+  const hl = formatNewsHeat(item.count)
+  const handleToggle = () => onToggleBookmark(item)
 
   return (
-    <button type="button" onClick={onClick} className="block w-full text-left no-underline bg-transparent border-0 p-0 px-4">
-      <div className="flex gap-3 py-3 border-b border-border/60 hover:bg-accent/5 transition-colors cursor-pointer min-h-[104px] items-start">
-        {/* 左侧文字 */}
-        <div className="flex-1 min-w-0 flex flex-col justify-center gap-1 py-0.5">
-          <TagRow tags={tags} />
-          <h3 className={`text-[15px] leading-[1.4] line-clamp-2 ${isRead ? 'text-muted-foreground/60' : 'text-foreground'}`}>
-            {item.title}
-          </h3>
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground/80">
-            <time dateTime={item.time} className="shrink-0">{time}</time>
-            {hl && <span className="shrink-0 text-[10px] text-muted-foreground/60">{hl}</span>}
+    <div className="relative px-4">
+      <button type="button" onClick={onClick} className="block w-full text-left no-underline bg-transparent border-0 p-0">
+        <div className="flex gap-3 py-3 border-b border-border/60 hover:bg-accent/5 transition-colors cursor-pointer min-h-[104px] items-start">
+          <div className="flex-1 min-w-0 flex flex-col justify-center gap-1 py-0.5">
+            <TagRow tags={tags} />
+            <h3 className="text-[15px] leading-[1.4] line-clamp-2 text-foreground">
+              {item.title}
+            </h3>
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground/80">
+              <time dateTime={item.time} className="shrink-0">{time}</time>
+              {hl && <span className="shrink-0 text-[10px] text-muted-foreground/60">{hl}</span>}
+            </div>
           </div>
+          {item.thumb && !imgError ? (
+            <div className="shrink-0 w-[96px] h-[72px] rounded-[5px] overflow-hidden bg-muted">
+              <img src={item.thumb} alt="" loading="lazy" referrerPolicy="no-referrer" className="w-full h-full object-cover" onError={() => setImgError(true)} />
+            </div>
+          ) : (
+            <div className="shrink-0 w-[96px] h-[72px] rounded-[5px] bg-muted/50" />
+          )}
         </div>
-        {/* 右侧小图 */}
-        {item.thumb && !imgError ? (
-          <div className="shrink-0 w-[96px] h-[72px] rounded-[5px] overflow-hidden bg-muted">
-            <img src={item.thumb} alt="" loading="lazy" referrerPolicy="no-referrer"
-              className={`w-full h-full object-cover ${isRead ? 'opacity-60 saturate-50' : ''}`}
-              onError={() => setImgError(true)} />
-          </div>
-        ) : (
-          <div className="shrink-0 w-[96px] h-[72px] rounded-[5px] bg-muted/50" />
-        )}
-        {onToggleBookmark && (
-          <BookmarkButton isBookmarked={isBookmarked} compact onClick={() => onToggleBookmark(item)} />
-        )}
-      </div>
-    </button>
+      </button>
+      <BookmarkButton isBookmarked={isBookmarked} compact onClick={handleToggle} />
+    </div>
   )
 }
 
 // ===== 主组件 =====
 
 export function HotEditorialFeed({
-  news, onCardClick, readUrls, bookmarkedUrls, onToggleBookmark,
+  news, onCardClick, bookmarkedUrls, onToggleBookmark,
 }: HotEditorialFeedProps) {
   const lead = news[0]
   const secondary = news.slice(1, 3)
@@ -225,29 +240,24 @@ export function HotEditorialFeed({
     <div className="pb-8">
       <SectionTitle title="近期热点" subtitle="过去 24 小时持续受到关注的报道" />
 
-      {/* 头条 */}
       {lead && (
         <LeadStory item={lead}
-          isRead={readUrls.has(lead.url ?? '')}
           isBookmarked={bookmarkedUrls.has(lead.url ?? '')}
           onClick={() => onCardClick(lead)}
           onToggleBookmark={onToggleBookmark} />
       )}
 
-      {/* 双次头条 */}
       {secondary.length > 0 && (
         <SecondaryStories items={secondary}
-          readUrls={readUrls} bookmarkedUrls={bookmarkedUrls}
+          bookmarkedUrls={bookmarkedUrls}
           onClick={onCardClick} onToggleBookmark={onToggleBookmark} />
       )}
 
-      {/* 持续关注 */}
       {rest.length > 0 && (
         <>
           <Divider />
           {rest.map((item) => (
             <ListItem key={item.url ?? item.title} item={item}
-              isRead={readUrls.has(item.url ?? '')}
               isBookmarked={bookmarkedUrls.has(item.url ?? '')}
               onClick={() => onCardClick(item)}
               onToggleBookmark={onToggleBookmark} />

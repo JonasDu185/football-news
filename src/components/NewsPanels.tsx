@@ -4,6 +4,7 @@ import type { NewsError } from '@/hooks/useNewsFeed'
 import { CarouselPanel } from './CarouselPanel'
 import { NewsList } from './NewsList'
 import { HotEditorialFeed } from './HotEditorialFeed'
+import { ScoreBoard } from './ScoreBoard'
 
 /** 三个频道的底色 */
 const PANEL_SURFACES = {
@@ -31,6 +32,8 @@ interface NewsPanelsProps {
   worldcupNews: NewsItem[]
   dailyNews: NewsItem[]
   hotNews: NewsItem[]
+  /** 全部新闻（用于比分解析） */
+  allNews: NewsItem[]
   feedHint: string
   onCardClick: (item: NewsItem) => void
   readUrls: Set<string>
@@ -51,18 +54,19 @@ export function NewsPanels({
   panel0Ref, panel1Ref, panel2Ref,
   viewportWidth, onRefresh,
   featured, hot,
-  worldcupNews, dailyNews, hotNews,
+  worldcupNews, dailyNews, hotNews, allNews,
   feedHint, onCardClick, readUrls, bookmarkedUrls, onToggleBookmark,
 }: NewsPanelsProps) {
   return (
     <>
-      {/* 世界杯 — 双列瀑布流 */}
+      {/* 世界杯 — 比分牌 + 双列瀑布流 */}
       <CarouselPanel
         panelRef={panel0Ref} width={viewportWidth} surface={PANEL_SURFACES.worldcup}
         hasMore={featured.hasMore} loadingMore={featured.loadingMore}
         onLoadMore={featured.onLoadMore} onRefresh={onRefresh}
         error={featured.error} onRetry={featured.onRetry}
       >
+        <ScoreBoard news={allNews} />
         <NewsList columns={2} news={worldcupNews} onCardClick={onCardClick} readUrls={readUrls}
           bookmarkedUrls={bookmarkedUrls} onToggleBookmark={onToggleBookmark} />
       </CarouselPanel>
@@ -89,7 +93,6 @@ export function NewsPanels({
         <HotEditorialFeed
           news={hotNews}
           onCardClick={onCardClick}
-          readUrls={readUrls}
           bookmarkedUrls={bookmarkedUrls}
           onToggleBookmark={onToggleBookmark}
         />

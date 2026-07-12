@@ -366,6 +366,7 @@ function App() {
                   featured={{ hasMore: featuredFeed.hasMore, loadingMore: featuredFeed.loadingMore, onLoadMore: featuredFeed.loadMore, error: featuredFeed.error, onRetry: featuredFeed.retry }}
                   hot={{ hasMore: hotFeed.hasMore, loadingMore: hotFeed.loadingMore, onLoadMore: hotFeed.loadMore, error: hotFeed.error, onRetry: hotFeed.retry }}
                   worldcupNews={worldcupNews} dailyNews={otherNews} hotNews={hotFeed.items}
+                  allNews={allNews}
                   feedHint={feedHint} onCardClick={openReader} readUrls={readUrls}
                   bookmarkedUrls={bookmarkedUrls} onToggleBookmark={toggleBookmark}
                 />
@@ -389,6 +390,7 @@ function App() {
               featured={{ hasMore: featuredFeed.hasMore, loadingMore: featuredFeed.loadingMore, onLoadMore: featuredFeed.loadMore, error: featuredFeed.error, onRetry: featuredFeed.retry }}
               hot={{ hasMore: hotFeed.hasMore, loadingMore: hotFeed.loadingMore, onLoadMore: hotFeed.loadMore, error: hotFeed.error, onRetry: hotFeed.retry }}
               worldcupNews={worldcupNews} dailyNews={otherNews} hotNews={hotFeed.items}
+              allNews={allNews}
               feedHint={feedHint} onCardClick={openReader} readUrls={readUrls}
               bookmarkedUrls={bookmarkedUrls} onToggleBookmark={toggleBookmark}
             />

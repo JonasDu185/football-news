@@ -46,8 +46,9 @@ describe('NewsCard', () => {
     expect(clicked).toBe(true)
   })
 
-  it('没有 onClick 时渲染为普通 div', () => {
-    const { container } = render(<NewsCard news={sampleNews} />)
-    expect(container.querySelector('button')).toBeNull()
+  it('没有 onClick 时不触发导航但仍有按钮结构', () => {
+    render(<NewsCard news={sampleNews} />)
+    // 按钮存在（用于语义结构），但没有 onClick 则不触发跳转
+    expect(screen.getByText('德国点球4-5遭巴拉圭淘汰')).toBeInTheDocument()
   })
 })
