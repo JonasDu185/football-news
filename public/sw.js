@@ -1,5 +1,5 @@
 // Service Worker — 让 PWA 可安装 + 离线缓存
-const CACHE_NAME = 'football-news-v2'
+const CACHE_NAME = 'football-news-v3'
 
 // 安装时缓存核心资源
 self.addEventListener('install', (event) => {
@@ -8,11 +8,12 @@ self.addEventListener('install', (event) => {
       cache.addAll([
         '/football/',
         '/football/manifest.json',
-        '/football/apple-touch-icon-v2.png',
-        '/football/icon-192-v2.png',
-        '/football/icon-512-v2.png',
+        '/football/apple-touch-icon.png',
+        '/football/icon-192.png',
+        '/football/icon-512.png',
+        '/football/icon-maskable-512.png',
       ])
-    )
+    ).then(() => self.skipWaiting())
   )
 })
 
@@ -32,6 +33,6 @@ self.addEventListener('activate', (event) => {
       Promise.all(
         keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))
       )
-    )
+    ).then(() => self.clients.claim())
   )
 })
