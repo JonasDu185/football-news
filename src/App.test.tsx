@@ -37,13 +37,13 @@ beforeEach(() => {
 })
 
 describe('App', () => {
-  it('渲染三个 Tab', async () => {
+  it('只渲染实时和热点两个 Tab', async () => {
     render(<App />)
 
     await waitFor(() => {
-      expect(screen.getByText('世界杯')).toBeInTheDocument()
-      expect(screen.getByText('每日消息')).toBeInTheDocument()
-      expect(screen.getByText('近期热点')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: '实时' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: '热点' })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: '世界杯' })).not.toBeInTheDocument()
     })
   })
 
@@ -51,14 +51,12 @@ describe('App', () => {
     render(<App />)
 
     await waitFor(() => {
-      expect(screen.getByText('世界杯')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: '实时' })).toBeInTheDocument()
     })
 
-    // 点击"每日消息"
-    fireEvent.click(screen.getByText('每日消息'))
+    fireEvent.click(screen.getByRole('button', { name: '热点' }))
 
-    // Tab 切换后"每日消息"仍然存在
-    expect(screen.getByText('每日消息')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '热点' })).toHaveAttribute('aria-current', 'page')
   })
 
   it('显示新闻卡片', async () => {
@@ -74,22 +72,29 @@ describe('App', () => {
     render(<App />)
 
     await waitFor(() => {
-      expect(screen.getByText('世界杯')).toBeInTheDocument()
+      expect(screen.getAllByText('新闻标题 1').length).toBeGreaterThan(0)
     })
+
+    const newsCarousel = screen.getByTestId('news-carousel')
+    expect(newsCarousel).toHaveAttribute('aria-hidden', 'false')
 
     // 点击搜索图标
     const searchBtn = screen.getByLabelText('搜索')
     fireEvent.click(searchBtn)
 
-    // 搜索栏出现
+    // 搜索栏出现，原新闻流只隐藏、不重新挂载
     const input = screen.getByPlaceholderText('搜索标题、球队、联赛…')
     expect(input).toBeInTheDocument()
+    expect(screen.getByTestId('news-carousel')).toBe(newsCarousel)
+    expect(newsCarousel).toHaveAttribute('aria-hidden', 'true')
 
     // 点击取消
     fireEvent.click(screen.getByText('取消'))
 
-    // 搜索栏消失
+    // 搜索栏消失，原新闻流和滚动状态仍然保留
     expect(screen.queryByPlaceholderText('搜索标题、球队、联赛…')).not.toBeInTheDocument()
+    expect(screen.getByTestId('news-carousel')).toBe(newsCarousel)
+    expect(newsCarousel).toHaveAttribute('aria-hidden', 'false')
   })
 
   it('卡片上有收藏按钮', async () => {
@@ -109,7 +114,7 @@ describe('App', () => {
     render(<App />)
 
     await waitFor(() => {
-      expect(screen.getByText('世界杯')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: '实时' })).toBeInTheDocument()
     })
 
     // 打开抽屉

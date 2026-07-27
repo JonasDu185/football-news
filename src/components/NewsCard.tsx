@@ -32,6 +32,11 @@ export function NewsCard({
 
   const displayTags = pickDisplayTags(news.tags, compact ? 1 : 2)
   const timeStr = formatNewsTime(news.time)
+  const imageAspect = index % 4 === 0
+    ? 'aspect-[4/5]'
+    : index % 4 === 1
+      ? 'aspect-square'
+      : 'aspect-[4/3]'
 
   // ==================== 列表模式 ====================
   if (variant === 'list') {
@@ -76,35 +81,36 @@ export function NewsCard({
       <button type="button" onClick={onClick} className="block w-full text-left no-underline bg-transparent border-0 p-0">
         {/* 图片区 */}
         {news.thumb && !imgError ? (
-          <div className={`relative w-full aspect-[4/3] rounded-[5px] overflow-hidden bg-muted mb-2 ${isRead ? 'opacity-60 saturate-50' : ''}`}>
-            <img src={news.thumb} alt="" className="w-full h-full object-cover transition-opacity group-hover/card:opacity-90" loading="lazy" referrerPolicy="no-referrer" onError={() => setImgError(true)} />
+          <div className={`relative w-full ${imageAspect} rounded-[2px] overflow-hidden bg-muted mb-3 ${isRead ? 'opacity-60 saturate-50' : ''}`}>
+            <img src={news.thumb} alt="" className="w-full h-full object-cover transition duration-300 group-hover/card:scale-[1.015] group-hover/card:opacity-90" loading="lazy" referrerPolicy="no-referrer" onError={() => setImgError(true)} />
             {featured && (
-              <span className="absolute top-1.5 left-1.5 bg-primary text-primary-foreground text-[9px] font-medium px-1.5 py-0.5 rounded-[3px] leading-none">精选</span>
+              <span className="absolute top-2 left-2 bg-primary text-primary-foreground text-[8px] font-medium px-1.5 py-1 leading-none tracking-[0.12em]">精选</span>
             )}
           </div>
         ) : (
-          <div className="relative w-full aspect-[4/3] rounded-[5px] bg-muted/50 mb-2 flex items-center justify-center">
+          <div className={`relative w-full ${imageAspect} rounded-[2px] bg-muted/50 mb-3 flex items-center justify-center`}>
             {featured && (
-              <span className="absolute top-1.5 left-1.5 bg-primary text-primary-foreground text-[9px] font-medium px-1.5 py-0.5 rounded-[3px] leading-none">精选</span>
+              <span className="absolute top-2 left-2 bg-primary text-primary-foreground text-[8px] font-medium px-1.5 py-1 leading-none tracking-[0.12em]">精选</span>
             )}
           </div>
         )}
 
         {/* 标签 */}
         {displayTags.length > 0 && (
-          <p className="text-[10px] text-primary/80 font-medium tracking-wide leading-none mb-1">{displayTags.join(' · ')}</p>
+          <p className="text-[9px] text-primary font-medium tracking-[0.16em] leading-none mb-2">{displayTags.join(' · ')}</p>
         )}
 
         {/* 标题 */}
-        <h3 className={`text-[13px] leading-[1.4] font-semibold mb-1 line-clamp-2 ${isRead ? 'text-muted-foreground/60' : 'text-foreground'}`}>
+        <h3 className={`font-heading text-[16px] leading-[1.38] font-semibold mb-2 line-clamp-3 ${isRead ? 'text-muted-foreground/60' : 'text-foreground'}`}>
           {news.title}
         </h3>
 
         {/* 元信息 */}
-        <div className="flex items-center justify-between text-[11px] text-muted-foreground/70">
+        <div className="flex items-center justify-between gap-2 text-[9px] tracking-[0.04em] text-muted-foreground">
           <time dateTime={news.time} className="shrink-0">{timeStr}</time>
           <span className="truncate max-w-[80px] text-right">{news.source}</span>
         </div>
+        <span className="mt-3 block h-[2px] w-5 bg-primary" aria-hidden="true" />
       </button>
 
       {/* 收藏按钮 — 与主点击区同级，图片右上角 */}

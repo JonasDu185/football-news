@@ -1,8 +1,8 @@
-import { DateHeader } from './components/DateHeader'
 import { NewsList } from './components/NewsList'
 import { ReaderView } from './components/ReaderView'
 import { NewsSkeleton } from './components/NewsSkeleton'
 import { NewsPanels } from './components/NewsPanels'
+import { EditorialHeader } from './components/EditorialHeader'
 
 import { useNewsFeed } from './hooks/useNewsFeed'
 import { useReadHistory } from './hooks/useReadHistory'
@@ -10,8 +10,7 @@ import { SearchBar } from './components/SearchBar'
 import { BookmarkList } from './components/BookmarkList'
 import { useSearch } from './hooks/useSearch'
 import { useBookmarks } from './hooks/useBookmarks'
-import { SearchIcon, BookmarkIcon, MenuIcon, SunIcon, MoonIcon, MonitorIcon, SettingsIcon } from 'lucide-react'
-import { Button } from './components/ui/button'
+import { BookmarkIcon, SunIcon, MoonIcon, MonitorIcon, SettingsIcon } from 'lucide-react'
 import { useTheme } from './hooks/useTheme'
 import { BackToTop } from './components/BackToTop'
 import { Drawer } from './components/Drawer'
@@ -35,9 +34,8 @@ function useToday() {
 }
 
 const TABS = [
-  { value: 'worldcup', label: '世界杯' },
-  { value: 'daily',    label: '每日消息' },
-  { value: 'hot',      label: '近期热点' },
+  { value: 'realtime', label: '实时' },
+  { value: 'hot',      label: '热点' },
 ] as const
 type TabValue = (typeof TABS)[number]['value']
 const TAB_VALUES = TABS.map(t => t.value)
@@ -49,11 +47,11 @@ function tabToIndex(tab: string): number {
 
 function App() {
   const today = useToday()
-  // 两个独立 feed：featured（每日消息+世界杯共用，增大取数以支持智能混排），hot（近期热点独立分页）
+  // 两个独立 feed：realtime（实时新闻智能混排），hot（热点独立分页）
   const featuredFeed = useNewsFeed('/api/news/featured', 20)
   const hotFeed = useNewsFeed('/api/news/hot')
   const [reading, setReading] = useState<NewsItem | null>(null)
-  const [activeTab, setActiveTab] = useState<TabValue>('worldcup')
+  const [activeTab, setActiveTab] = useState<TabValue>('realtime')
   const { readUrls, markRead } = useReadHistory()
 
   // 搜索
@@ -95,7 +93,7 @@ function App() {
     showToast('偏好已保存，每日消息将优先显示相关内容')
   }
 
-  // 当前页索引：0=世界杯, 1=每日消息, 2=近期热点
+  // 当前页索引：0=实时, 1=热点
   const activeIndex = tabToIndex(activeTab)
 
   // 横滑状态
@@ -118,15 +116,12 @@ function App() {
     return () => ro.disconnect()
   }, [])
 
-  // 三个面板的滚动容器 ref
+  // 两个面板的滚动容器 ref
   const panel0Ref = useRef<HTMLDivElement>(null)
   const panel1Ref = useRef<HTMLDivElement>(null)
-  const panel2Ref = useRef<HTMLDivElement>(null)
-  const activePanelRef = [panel0Ref, panel1Ref, panel2Ref][activeIndex]
+  const activePanelRef = [panel0Ref, panel1Ref][activeIndex]
   // 阅读模式滚动容器 ref（用于阅读进度条）
   const readerScrollRef = useRef<HTMLDivElement>(null)
-  // ── 撕票根：CSS animation-delay 1s 后 DateHeader 飞走消失 ──
-  const [headerGone, setHeaderGone] = useState(false)
 
   // 切页时清除 carousel 过渡
   const prevIndexRef = useRef(activeIndex)
@@ -183,7 +178,7 @@ function App() {
     // 边界阻力：左边界、右边界 → 0.3 倍阻力
     let offset = dx
     const atLeftEdge = activeIndex === 0
-    const atRightEdge = activeIndex === 2
+    const atRightEdge = activeIndex === TAB_COUNT - 1
     if ((offset > 0 && atLeftEdge) || (offset < 0 && atRightEdge)) {
       offset = offset * 0.3
     }
@@ -208,26 +203,10 @@ function App() {
     setSwipeOffset(0)
   }, [goNext, goPrev])
 
-  // 是否有偏好设置
-  const hasPreferences = preferences.leagues.length > 0 || preferences.teams.length > 0
-
-  // ── 数据拆分 + 每日消息智能混排 ──
-  const { worldcupNews, otherNews } = useMemo(() => {
-    const wc: NewsItem[] = []
-    const other: NewsItem[] = []
-    for (const n of featuredFeed.items) {
-      if (n.tags.includes('世界杯')) wc.push(n)
-      else other.push(n)
-    }
-    // 每日消息应用智能混排（世界杯保持时间序）
-    const rankedOther = rankFeed(other, { preferences, readUrls })
-    return { worldcupNews: wc, otherNews: rankedOther }
+  // 实时新闻统一智能混排：原世界杯内容不再独立成频道，但仍保留在实时流中
+  const realtimeNews = useMemo(() => {
+    return rankFeed(featuredFeed.items, { preferences, readUrls })
   }, [featuredFeed.items, preferences, readUrls])
-
-  // 每日消息顶部的编辑提示
-  const feedHint = hasPreferences
-    ? '为你优先 · 结合关注内容与实时热度'
-    : '实时精选 · 按新鲜度与热度排序'
 
   // 用 ref 持有 retry 函数，避免 handleRefresh 的依赖问题
   const featuredRetryRef = useRef(featuredFeed.retry)
@@ -284,54 +263,18 @@ function App() {
 
   return (
     <div className="h-dvh flex flex-col bg-background max-w-md mx-auto relative">
-      {/* 撕票根：CSS animation-delay 1s 后飞走 */}
-      {!headerGone && (
-        <div className="shrink-0 overflow-hidden" style={{ maxHeight: '200px' }}>
-          <div className="animate-tear-off" onAnimationEnd={() => setHeaderGone(true)}>
-            <DateHeader date={today} />
-          </div>
-        </div>
-      )}
+      <EditorialHeader
+        date={today}
+        tabs={TABS}
+        activeTab={activeTab}
+        onTabChange={handleTabClick}
+        onMenu={() => setDrawerOpen(true)}
+        onSearch={() => setSearchOpen(!searchOpen)}
+      />
 
       {/* 搜索栏 */}
       {searchOpen && (
         <SearchBar query={query} onChange={setQuery} onClose={() => { setSearchOpen(false); setQuery('') }} />
-      )}
-
-      {/* 全局标签栏 — 安静的文字频道导航，无任何滑动指示器 */}
-      {!searchOpen && (
-      <div className="bg-background z-20 relative border-b border-border/60">
-        <div className="flex items-center px-3 h-11">
-          {/* 左侧菜单 */}
-          <Button variant="ghost" size="icon" className="size-8 shrink-0 text-muted-foreground" onClick={() => setDrawerOpen(true)} aria-label="菜单">
-            <MenuIcon className="size-4" />
-          </Button>
-
-          {/* 三个频道 — 稳定宽度的文字导航 */}
-          <nav className="flex-1 flex justify-center" aria-label="新闻频道">
-            {TABS.map((tab) => (
-              <button
-                key={tab.value}
-                type="button"
-                onClick={() => handleTabClick(tab.value)}
-                aria-current={activeTab === tab.value ? 'page' : undefined}
-                className={`min-w-[72px] px-2 py-2 text-[13px] leading-none transition-colors ${
-                  activeTab === tab.value
-                    ? 'text-foreground font-semibold'
-                    : 'text-muted-foreground'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-
-          {/* 右侧搜索 */}
-          <Button variant="ghost" size="icon" className="size-8 shrink-0 text-muted-foreground" onClick={() => setSearchOpen(!searchOpen)} aria-label="搜索">
-            <SearchIcon className="size-4" />
-          </Button>
-        </div>
-      </div>
       )}
 
       {/* Carousel 视口 — 填满剩余高度 */}
@@ -344,39 +287,18 @@ function App() {
         style={{ touchAction: 'pan-y' }}
       >
         {featuredFeed.loading ? (
-          <div className="h-full overflow-y-auto pt-2">
+          <div
+            className={`h-full overflow-y-auto pt-2 ${searchOpen ? 'invisible pointer-events-none' : ''}`}
+            aria-hidden={searchOpen}
+          >
             <NewsSkeleton />
           </div>
-        ) : searchOpen ? (
-          /* 搜索模式 */
-          <div className="h-full overflow-y-auto pt-2">
-            {query ? (
-              results.length === 0 ? (
-                <p className="px-4 py-12 text-center text-muted-foreground text-sm">未找到相关新闻</p>
-              ) : (
-                <NewsList columns={2} news={results} onCardClick={openReader} readUrls={readUrls}
-                  bookmarkedUrls={bookmarkedUrls} onToggleBookmark={toggleBookmark} />
-              )
-            ) : (
-              /* 搜索已打开但无输入 — 不可滑动 Carousel（复用 NewsPanels） */
-              <div className="flex h-full" style={{ transform: trackTransform, overflowAnchor: 'none' }}>
-                <NewsPanels
-                  panel0Ref={panel0Ref} panel1Ref={panel1Ref} panel2Ref={panel2Ref}
-                  viewportWidth={viewportWidth} onRefresh={handleRefresh}
-                  featured={{ hasMore: featuredFeed.hasMore, loadingMore: featuredFeed.loadingMore, onLoadMore: featuredFeed.loadMore, error: featuredFeed.error, onRetry: featuredFeed.retry }}
-                  hot={{ hasMore: hotFeed.hasMore, loadingMore: hotFeed.loadingMore, onLoadMore: hotFeed.loadMore, error: hotFeed.error, onRetry: hotFeed.retry }}
-                  worldcupNews={worldcupNews} dailyNews={otherNews} hotNews={hotFeed.items}
-                  allNews={allNews}
-                  feedHint={feedHint} onCardClick={openReader} readUrls={readUrls}
-                  bookmarkedUrls={bookmarkedUrls} onToggleBookmark={toggleBookmark}
-                />
-              </div>
-            )}
-          </div>
         ) : (
-          /* 正常模式：三页横排 Carousel */
+          /* 正常新闻流始终保留，搜索时只隐藏，避免列表重新挂载和闪动 */
           <div
-            className="flex h-full"
+            data-testid="news-carousel"
+            className={`flex h-full ${searchOpen ? 'invisible pointer-events-none' : ''}`}
+            aria-hidden={searchOpen}
             style={{
               transform: trackTransform,
               transition: enableTransition ? 'transform 0.3s ease-out' : 'none',
@@ -385,21 +307,34 @@ function App() {
             }}
           >
             <NewsPanels
-              panel0Ref={panel0Ref} panel1Ref={panel1Ref} panel2Ref={panel2Ref}
+              panel0Ref={panel0Ref} panel1Ref={panel1Ref}
               viewportWidth={viewportWidth} onRefresh={handleRefresh}
               featured={{ hasMore: featuredFeed.hasMore, loadingMore: featuredFeed.loadingMore, onLoadMore: featuredFeed.loadMore, error: featuredFeed.error, onRetry: featuredFeed.retry }}
               hot={{ hasMore: hotFeed.hasMore, loadingMore: hotFeed.loadingMore, onLoadMore: hotFeed.loadMore, error: hotFeed.error, onRetry: hotFeed.retry }}
-              worldcupNews={worldcupNews} dailyNews={otherNews} hotNews={hotFeed.items}
-              allNews={allNews}
-              feedHint={feedHint} onCardClick={openReader} readUrls={readUrls}
+              realtimeNews={realtimeNews} hotNews={hotFeed.items}
+              onCardClick={openReader} readUrls={readUrls}
               bookmarkedUrls={bookmarkedUrls} onToggleBookmark={toggleBookmark}
             />
+          </div>
+        )}
+
+        {/* 搜索层独立覆盖，不影响下方新闻流的状态和滚动位置 */}
+        {searchOpen && (
+          <div className="absolute inset-0 overflow-y-auto bg-background pt-2">
+            {query ? (
+              results.length === 0 ? (
+                <p className="px-4 py-12 text-center text-muted-foreground text-sm">未找到相关新闻</p>
+              ) : (
+                <NewsList columns={2} news={results} onCardClick={openReader} readUrls={readUrls}
+                  bookmarkedUrls={bookmarkedUrls} onToggleBookmark={toggleBookmark} />
+              )
+            ) : null}
           </div>
         )}
       </div>
 
       {/* 回到顶部 */}
-      <BackToTop scrollContainerRef={activePanelRef} />
+      {!searchOpen && <BackToTop scrollContainerRef={activePanelRef} />}
 
       {/* 阅读模式 — fixed 覆盖层 */}
       {reading && (
