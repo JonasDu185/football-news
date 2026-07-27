@@ -20,7 +20,7 @@ rsync -avz --delete \
   ./ "$SERVER:$REMOTE_DIR/"
 
 echo "📥 服务器安装依赖..."
-ssh "$SERVER" "cd $REMOTE_DIR && npm install --production"
+ssh "$SERVER" "cd $REMOTE_DIR && npm install --omit=dev"
 
 echo "🔄 重启服务..."
 ssh "$SERVER" "cd $REMOTE_DIR && mkdir -p data logs && pm2 startOrReload ecosystem.config.cjs && pm2 save"

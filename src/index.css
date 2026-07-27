@@ -6,7 +6,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
-    /* 字体：标题用宋体/衬线体，正文无衬线体 */
+    /* 杂志式标题用宋体，功能文字使用现代无衬线体 */
     --font-heading: 'Noto Serif SC', 'Songti SC', 'Source Han Serif SC', 'PingFang SC', 'STSong', serif;
     --font-sans: 'Geist Variable', 'Inter', 'PingFang SC', 'Noto Sans SC', system-ui, sans-serif;
     --font-mono: 'JetBrains Mono', 'Menlo', 'Consolas', monospace;
@@ -51,85 +51,79 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* ── 专业体育媒体风 · 浅色主题 ── */
+/* ── 足球志 · 先锋杂志浅色主题 ── */
 :root {
-    /* 纸感暖白底 + 石墨黑文字 */
-    --background: #F7F7F4;
-    --foreground: #171A18;
-    /* 卡片色 */
-    --card: #FCFCFA;
-    --card-foreground: #171A18;
-    --popover: #FCFCFA;
-    --popover-foreground: #171A18;
-    /* 深草坪绿 */
-    --primary: #1F5A42;
+    --background: #F6F4EF;
+    --foreground: #111216;
+    --card: #F6F4EF;
+    --card-foreground: #111216;
+    --popover: #FBFAF7;
+    --popover-foreground: #111216;
+    --primary: #1647E8;
     --primary-foreground: #FFFFFF;
-    /* 次要底色 */
-    --secondary: #EDEDEA;
-    --secondary-foreground: #171A18;
-    /* 静默区 */
-    --muted: #EDEDEA;
-    --muted-foreground: #6E746F;
-    /* 强调色 */
-    --accent: #1F5A42;
+    --secondary: #EAE7DF;
+    --secondary-foreground: #111216;
+    --muted: #EAE7DF;
+    --muted-foreground: #716F69;
+    --accent: #1647E8;
     --accent-foreground: #FFFFFF;
-    --destructive: #C0392B;
-    /* 细分割线 */
-    --border: #E3E5E0;
-    --input: #EDEDEA;
-    --ring: #1F5A42;
-    /* 图表 */
-    --chart-1: #1F5A42;
-    --chart-2: #6E746F;
-    --chart-3: #EDEDEA;
-    --chart-4: #E3E5E0;
-    --chart-5: #F7F7F4;
-    /* 紧凑圆角 */
-    --radius: 0.25rem;
-    /* Sidebar */
-    --sidebar: #F7F7F4;
-    --sidebar-foreground: #171A18;
-    --sidebar-primary: #1F5A42;
+    --destructive: #C43D36;
+    --border: #D7D3CA;
+    --input: #EAE7DF;
+    --ring: #1647E8;
+    --chart-1: #1647E8;
+    --chart-2: #716F69;
+    --chart-3: #EAE7DF;
+    --chart-4: #D7D3CA;
+    --chart-5: #F6F4EF;
+    --radius: 0.125rem;
+    --sidebar: #F6F4EF;
+    --sidebar-foreground: #111216;
+    --sidebar-primary: #1647E8;
     --sidebar-primary-foreground: #FFFFFF;
-    --sidebar-accent: #EDEDEA;
-    --sidebar-accent-foreground: #171A18;
-    --sidebar-border: #E3E5E0;
-    --sidebar-ring: #1F5A42;
+    --sidebar-accent: #EAE7DF;
+    --sidebar-accent-foreground: #111216;
+    --sidebar-border: #D7D3CA;
+    --sidebar-ring: #1647E8;
+    --panel-realtime: #F6F4EF;
+    --panel-hot: #F0EEE8;
 }
 
-/* ── 专业体育媒体风 · 深色主题 ── */
+/* ── 足球志 · 先锋杂志深色主题 ── */
 .dark {
-  --background: #1A1D1C;
-  --foreground: #E5E7E4;
-  --card: #242826;
-  --card-foreground: #E5E7E4;
-  --popover: #242826;
-  --popover-foreground: #E5E7E4;
-  --primary: #2D8A5E;
+  --background: #080A0E;
+  --foreground: #F1EEE7;
+  --card: #080A0E;
+  --card-foreground: #F1EEE7;
+  --popover: #12151B;
+  --popover-foreground: #F1EEE7;
+  --primary: #4C70FF;
   --primary-foreground: #FFFFFF;
-  --secondary: #2A2E2C;
-  --secondary-foreground: #E5E7E4;
-  --muted: #2A2E2C;
-  --muted-foreground: #909892;
-  --accent: #2D8A5E;
+  --secondary: #171A21;
+  --secondary-foreground: #F1EEE7;
+  --muted: #171A21;
+  --muted-foreground: #979BA4;
+  --accent: #4C70FF;
   --accent-foreground: #FFFFFF;
-  --destructive: #E74C3C;
-  --border: #363A37;
-  --input: #2A2E2C;
-  --ring: #2D8A5E;
-  --chart-1: #2D8A5E;
-  --chart-2: #909892;
-  --chart-3: #2A2E2C;
-  --chart-4: #363A37;
-  --chart-5: #1A1D1C;
-  --sidebar: #1A1D1C;
-  --sidebar-foreground: #E5E7E4;
-  --sidebar-primary: #2D8A5E;
+  --destructive: #EF6158;
+  --border: #2A2E36;
+  --input: #171A21;
+  --ring: #4C70FF;
+  --chart-1: #4C70FF;
+  --chart-2: #979BA4;
+  --chart-3: #171A21;
+  --chart-4: #2A2E36;
+  --chart-5: #080A0E;
+  --sidebar: #080A0E;
+  --sidebar-foreground: #F1EEE7;
+  --sidebar-primary: #4C70FF;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #2A2E2C;
-  --sidebar-accent-foreground: #E5E7E4;
-  --sidebar-border: #363A37;
-  --sidebar-ring: #2D8A5E;
+  --sidebar-accent: #171A21;
+  --sidebar-accent-foreground: #F1EEE7;
+  --sidebar-border: #2A2E36;
+  --sidebar-ring: #4C70FF;
+  --panel-realtime: #080A0E;
+  --panel-hot: #0D1015;
 }
 
 /* 页面首次加载时，在 JS 运行前用系统偏好避免闪烁 */
@@ -157,6 +151,25 @@
     font-family: var(--font-heading);
     @apply font-semibold tracking-normal;
   }
+}
+
+.editorial-icon-button {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  color: var(--muted-foreground);
+  transition: color 160ms ease, background-color 160ms ease;
+}
+
+.editorial-icon-button:hover {
+  color: var(--foreground);
+  background: var(--muted);
+}
+
+.editorial-icon-button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 
 /* 阅读模式内容样式 */
