@@ -2,7 +2,7 @@ import { NewsList } from './components/NewsList'
 import { ReaderView } from './components/ReaderView'
 import { NewsSkeleton } from './components/NewsSkeleton'
 import { NewsPanels } from './components/NewsPanels'
-import { EditorialHeader } from './components/EditorialHeader'
+import { ChannelNav } from './components/ChannelNav'
 
 import { useNewsFeed } from './hooks/useNewsFeed'
 import { useReadHistory } from './hooks/useReadHistory'
@@ -21,18 +21,6 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import type { NewsItem } from './lib/newsFilter'
 import { rankFeed } from './lib/feedRanker'
 
-function useToday() {
-  const [today, setToday] = useState(() => new Date())
-  useEffect(() => {
-    const now = new Date()
-    const msUntilMidnight =
-      new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() - now.getTime()
-    const timer = setTimeout(() => setToday(new Date()), msUntilMidnight + 1000)
-    return () => clearTimeout(timer)
-  }, [])
-  return today
-}
-
 const TABS = [
   { value: 'realtime', label: '实时' },
   { value: 'hot',      label: '热点' },
@@ -46,7 +34,6 @@ function tabToIndex(tab: string): number {
 }
 
 function App() {
-  const today = useToday()
   // 两个独立 feed：realtime（实时新闻智能混排），hot（热点独立分页）
   const featuredFeed = useNewsFeed('/api/news/featured', 20)
   const hotFeed = useNewsFeed('/api/news/hot')
@@ -263,8 +250,7 @@ function App() {
 
   return (
     <div className="h-dvh flex flex-col bg-background max-w-md mx-auto relative">
-      <EditorialHeader
-        date={today}
+      <ChannelNav
         tabs={TABS}
         activeTab={activeTab}
         onTabChange={handleTabClick}

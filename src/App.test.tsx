@@ -44,6 +44,7 @@ describe('App', () => {
       expect(screen.getByRole('button', { name: '实时' })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: '热点' })).toBeInTheDocument()
       expect(screen.queryByRole('button', { name: '世界杯' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('heading', { name: '足球志' })).not.toBeInTheDocument()
     })
   })
 
