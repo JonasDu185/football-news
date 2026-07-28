@@ -35,7 +35,7 @@ function tabToIndex(tab: string): number {
 
 function App() {
   // 两个独立 feed：realtime（实时新闻智能混排），hot（热点独立分页）
-  const featuredFeed = useNewsFeed('/api/news/featured', 20)
+  const featuredFeed = useNewsFeed('/api/news/featured', 30)
   const hotFeed = useNewsFeed('/api/news/hot')
   const [reading, setReading] = useState<NewsItem | null>(null)
   const [activeTab, setActiveTab] = useState<TabValue>('realtime')
@@ -192,8 +192,8 @@ function App() {
 
   // 实时新闻统一智能混排：原世界杯内容不再独立成频道，但仍保留在实时流中
   const realtimeNews = useMemo(() => {
-    return rankFeed(featuredFeed.items, { preferences, readUrls })
-  }, [featuredFeed.items, preferences, readUrls])
+    return rankFeed(featuredFeed.items, { preferences, readUrls: new Set() })
+  }, [featuredFeed.items, preferences])
 
   // 用 ref 持有 retry 函数，避免 handleRefresh 的依赖问题
   const featuredRetryRef = useRef(featuredFeed.retry)
