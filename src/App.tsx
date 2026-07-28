@@ -192,8 +192,8 @@ function App() {
 
   // 实时新闻统一智能混排：原世界杯内容不再独立成频道，但仍保留在实时流中
   const realtimeNews = useMemo(() => {
-    return rankFeed(featuredFeed.items, { preferences, readUrls: new Set() })
-  }, [featuredFeed.items, preferences])
+    return rankFeed(featuredFeed.items, { preferences, readUrls })
+  }, [featuredFeed.items, preferences, readUrls])
 
   // 用 ref 持有 retry 函数，避免 handleRefresh 的依赖问题
   const featuredRetryRef = useRef(featuredFeed.retry)
