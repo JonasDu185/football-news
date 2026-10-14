@@ -34,7 +34,7 @@ export function ChannelNav({
         <MenuIcon className="size-[19px]" strokeWidth={1.6} />
       </button>
 
-      <div className="flex items-stretch justify-center gap-10">
+      <div className="flex items-stretch justify-center gap-6">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.value
           return (

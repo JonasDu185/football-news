@@ -5,13 +5,16 @@ import { CarouselPanel } from './CarouselPanel'
 import { NewsList } from './NewsList'
 import { HotEditorialFeed } from './HotEditorialFeed'
 
-/** 两个频道的底色通过主题变量保持亮暗模式一致 */
+/** 各频道底色通过主题变量保持亮暗模式一致 */
 const PANEL_SURFACES = {
-  realtime: 'var(--panel-realtime)',
-  hot:      'var(--panel-hot)',
+  football:   'var(--panel-realtime)',
+  other:      'var(--panel-hot)',
+  basketball: 'var(--panel-realtime)',
+  hot:        'var(--panel-hot)',
 } as const
 
-interface PanelData {
+interface FeedData {
+  news: NewsItem[]
   hasMore: boolean
   loadingMore: boolean
   onLoadMore: () => void
@@ -20,14 +23,15 @@ interface PanelData {
 }
 
 interface NewsPanelsProps {
-  panel0Ref: RefObject<HTMLDivElement | null>
-  panel1Ref: RefObject<HTMLDivElement | null>
+  panelRefs: RefObject<HTMLDivElement | null>[]
   viewportWidth: number
   onRefresh: () => Promise<void>
-  featured: PanelData
-  hot: PanelData
-  realtimeNews: NewsItem[]
-  hotNews: NewsItem[]
+  feeds: {
+    football: FeedData
+    other: FeedData
+    basketball: FeedData
+    hot: FeedData
+  }
   onCardClick: (item: NewsItem) => void
   readUrls: Set<string>
   bookmarkedUrls: Set<string>
@@ -35,34 +39,55 @@ interface NewsPanelsProps {
 }
 
 export function NewsPanels({
-  panel0Ref, panel1Ref,
+  panelRefs,
   viewportWidth, onRefresh,
-  featured, hot,
-  realtimeNews, hotNews,
+  feeds,
   onCardClick, readUrls, bookmarkedUrls, onToggleBookmark,
 }: NewsPanelsProps) {
   return (
     <>
-      {/* 实时 — 智能混排双列瀑布流 */}
+      {/* 足球 — 智能混排双列瀑布流 */}
       <CarouselPanel
-        panelRef={panel0Ref} width={viewportWidth} surface={PANEL_SURFACES.realtime}
-        hasMore={featured.hasMore} loadingMore={featured.loadingMore}
-        onLoadMore={featured.onLoadMore} onRefresh={onRefresh}
-        error={featured.error} onRetry={featured.onRetry}
+        panelRef={panelRefs[0]} width={viewportWidth} surface={PANEL_SURFACES.football}
+        hasMore={feeds.football.hasMore} loadingMore={feeds.football.loadingMore}
+        onLoadMore={feeds.football.onLoadMore} onRefresh={onRefresh}
+        error={feeds.football.error} onRetry={feeds.football.onRetry}
       >
-        <NewsList columns={2} news={realtimeNews} onCardClick={onCardClick} readUrls={readUrls}
+        <NewsList columns={2} news={feeds.football.news} onCardClick={onCardClick} readUrls={readUrls}
           bookmarkedUrls={bookmarkedUrls} onToggleBookmark={onToggleBookmark} />
       </CarouselPanel>
 
-      {/* 热点 — 编辑首页 */}
+      {/* 综合 — 智能混排双列瀑布流 */}
       <CarouselPanel
-        panelRef={panel1Ref} width={viewportWidth} surface={PANEL_SURFACES.hot}
-        hasMore={hot.hasMore} loadingMore={hot.loadingMore}
-        onLoadMore={hot.onLoadMore} onRefresh={onRefresh}
-        error={hot.error} onRetry={hot.onRetry}
+        panelRef={panelRefs[1]} width={viewportWidth} surface={PANEL_SURFACES.other}
+        hasMore={feeds.other.hasMore} loadingMore={feeds.other.loadingMore}
+        onLoadMore={feeds.other.onLoadMore} onRefresh={onRefresh}
+        error={feeds.other.error} onRetry={feeds.other.onRetry}
+      >
+        <NewsList columns={2} news={feeds.other.news} onCardClick={onCardClick} readUrls={readUrls}
+          bookmarkedUrls={bookmarkedUrls} onToggleBookmark={onToggleBookmark} />
+      </CarouselPanel>
+
+      {/* 篮球 — 智能混排双列瀑布流 */}
+      <CarouselPanel
+        panelRef={panelRefs[2]} width={viewportWidth} surface={PANEL_SURFACES.basketball}
+        hasMore={feeds.basketball.hasMore} loadingMore={feeds.basketball.loadingMore}
+        onLoadMore={feeds.basketball.onLoadMore} onRefresh={onRefresh}
+        error={feeds.basketball.error} onRetry={feeds.basketball.onRetry}
+      >
+        <NewsList columns={2} news={feeds.basketball.news} onCardClick={onCardClick} readUrls={readUrls}
+          bookmarkedUrls={bookmarkedUrls} onToggleBookmark={onToggleBookmark} />
+      </CarouselPanel>
+
+      {/* 热点 — 编辑首页（全项目，按热度） */}
+      <CarouselPanel
+        panelRef={panelRefs[3]} width={viewportWidth} surface={PANEL_SURFACES.hot}
+        hasMore={feeds.hot.hasMore} loadingMore={feeds.hot.loadingMore}
+        onLoadMore={feeds.hot.onLoadMore} onRefresh={onRefresh}
+        error={feeds.hot.error} onRetry={feeds.hot.onRetry}
       >
         <HotEditorialFeed
-          news={hotNews}
+          news={feeds.hot.news}
           onCardClick={onCardClick}
           bookmarkedUrls={bookmarkedUrls}
           onToggleBookmark={onToggleBookmark}

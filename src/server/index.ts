@@ -42,10 +42,25 @@ app.get('/api/news/featured', (req, res) => {
   res.json(news)
 })
 
+// 按体育项目分类获取新闻：category = football | basketball | other
+app.get('/api/news/by-category', (req, res) => {
+  const category = req.query.category as string
+  const valid = ['football', 'basketball', 'other']
+  if (!category || !valid.includes(category)) {
+    res.status(400).json({ error: 'category 参数无效，应为 football / basketball / other' })
+    return
+  }
+  const limit = Math.min(Number(req.query.limit) || 15, 50)
+  const offset = Number(req.query.offset) || 0
+  // 近 72 小时，按时间倒序
+  const news = store.getByCategory(category as 'football' | 'basketball' | 'other', 72, limit, offset)
+  res.json(news)
+})
+
 app.get('/api/news/hot', (req, res) => {
   const limit = Math.min(Number(req.query.limit) || 15, 50)
   const offset = Number(req.query.offset) || 0
-  // 近期热点：最近 72 小时，按热度排序
+  // 近期热点：最近 72 小时，按热度排序（不限体育项目，全项目混排）
   const news = store.getHotNews(72, limit, offset)
   res.json(news)
 })

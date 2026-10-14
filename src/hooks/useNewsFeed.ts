@@ -59,7 +59,9 @@ export function useNewsFeed(endpoint: string, pageSize = PAGE_SIZE): NewsFeedSta
       abortRef.current = controller
 
       try {
-        const res = await fetch(`${endpoint}?limit=${pageSize}&offset=${offset}`, {
+        // endpoint 可能已带查询参数（如 '/api/news/by-category?category=nba'），此时用 & 追加
+        const separator = endpoint.includes('?') ? '&' : '?'
+        const res = await fetch(`${endpoint}${separator}limit=${pageSize}&offset=${offset}`, {
           signal: controller.signal,
         })
 

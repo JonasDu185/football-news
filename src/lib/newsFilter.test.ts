@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { filterFootballNews, type RawNewsItem } from './newsFilter'
 
 describe('filterFootballNews', () => {
-  it('只保留足球相关的（zuqiu type 或 lable 含足球/英超等），扔掉篮球', () => {
+  it('保留全部项目，并按 type 归类（zuqiu=足球，其他=综合）', () => {
     const raw: RawNewsItem[] = [
       {
         title: '德国点球出局',
@@ -29,10 +29,16 @@ describe('filterFootballNews', () => {
 
     const result = filterFootballNews(raw)
 
-    expect(result).toHaveLength(2)
-    expect(result.map((n) => n.title)).not.toContain('莫兰特交易')
+    expect(result).toHaveLength(3)
+    expect(result.map((n) => n.title)).toContain('莫兰特交易')
     expect(result.map((n) => n.title)).toContain('德国点球出局')
     expect(result.map((n) => n.title)).toContain('摩洛哥淘汰荷兰')
+
+    // 分类正确
+    const football = result.find((n) => n.title === '德国点球出局')
+    const basketball = result.find((n) => n.title === '莫兰特交易')
+    expect(football?.category).toBe('football')
+    expect(basketball?.category).toBe('basketball') // lanqiu 也归类为篮球
   })
 
   it('按发布时间倒序排列', () => {
@@ -52,11 +58,13 @@ describe('filterFootballNews', () => {
     expect(filterFootballNews([])).toEqual([])
   })
 
-  it('全是篮球时返回空', () => {
+  it('nba type 归类为篮球，而不是被过滤掉', () => {
     const raw: RawNewsItem[] = [
-      { title: 'NBA', shortTitle: 'NBA', type: 'lanqiu', createtime: '2026-06-30 10:00:00', lable: '篮球' },
+      { title: 'NBA', shortTitle: 'NBA', type: 'nba', createtime: '2026-06-30 10:00:00', lable: '篮球' },
     ]
-    expect(filterFootballNews(raw)).toEqual([])
+    const result = filterFootballNews(raw)
+    expect(result).toHaveLength(1)
+    expect(result[0].category).toBe('basketball')
   })
 
   it('字段标准化：缺失字段用默认值', () => {
