@@ -1,9 +1,10 @@
 import Database from 'better-sqlite3'
-import type { NewsItem } from '../lib/newsFilter'
+import type { NewsItem, SportCategory } from '../lib/newsFilter'
 
 export interface NewsStore {
   saveNews(news: NewsItem[]): void
   getRecentNews(hours: number, limit?: number, offset?: number): NewsItem[]
+  getByCategory(category: SportCategory, hours: number, limit?: number, offset?: number): NewsItem[]
   getHotNews(hours: number, limit?: number, offset?: number): NewsItem[]
   cleanupOldNews(days: number): number
   close(): void
@@ -41,6 +42,7 @@ export function createStorage(dbPath: string): NewsStore & ArticleCacheStore {
       fallback_url TEXT,
       count INTEGER NOT NULL DEFAULT 0,
       tags TEXT NOT NULL DEFAULT '[]',
+      category TEXT NOT NULL DEFAULT 'other',
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
     -- #21 修复：time 列索引，避免全表扫描
@@ -58,10 +60,17 @@ export function createStorage(dbPath: string): NewsStore & ArticleCacheStore {
     CREATE INDEX IF NOT EXISTS idx_article_cache_created ON article_cache(created_at);
   `)
 
+  // 迁移：旧表可能缺少 category 列，检测并补充
+  const cols = db.prepare(`PRAGMA table_info(news)`).all() as { name: string }[]
+  if (!cols.some((c) => c.name === 'category')) {
+    db.exec(`ALTER TABLE news ADD COLUMN category TEXT NOT NULL DEFAULT 'other'`)
+  }
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_news_category ON news(category)`)
+
   // 准备语句，提升性能
   const insertStmt = db.prepare(`
-    INSERT INTO news (title, time, source, thumb, url, fallback_url, count, tags)
-    VALUES (@title, @time, @source, @thumb, @url, @fallbackUrl, @count, @tags)
+    INSERT INTO news (title, time, source, thumb, url, fallback_url, count, tags, category)
+    VALUES (@title, @time, @source, @thumb, @url, @fallbackUrl, @count, @tags, @category)
     ON CONFLICT(url) DO UPDATE SET
       title = excluded.title,
       source = COALESCE(excluded.source, news.source),
@@ -69,6 +78,7 @@ export function createStorage(dbPath: string): NewsStore & ArticleCacheStore {
       fallback_url = COALESCE(excluded.fallback_url, news.fallback_url),
       count = MAX(excluded.count, news.count),
       tags = excluded.tags,
+      category = excluded.category,
       time = excluded.time
   `)
 
@@ -85,11 +95,36 @@ export function createStorage(dbPath: string): NewsStore & ArticleCacheStore {
             fallbackUrl: item.fallbackUrl,
             count: item.count,
             tags: JSON.stringify(item.tags),
+            category: item.category ?? 'other',
           })
         }
       })
 
       insertMany(newsList)
+    },
+
+    getByCategory(category: SportCategory, hours: number, limit?: number, offset?: number): NewsItem[] {
+      const cutoff = new Date(Date.now() - hours * 3600 * 1000)
+      const cutoffStr = cutoff.toLocaleString('sv-SE', { timeZone: 'Asia/Shanghai' }).replace('T', ' ')
+
+      let sql = `
+        SELECT title, time, source, thumb, url, fallback_url, count, tags, category
+        FROM news
+        WHERE category = ? AND time >= ?
+        ORDER BY time DESC
+      `
+      const params: (string | number)[] = [category, cutoffStr]
+
+      if (limit !== undefined) {
+        sql += ' LIMIT ?'
+        params.push(limit)
+      }
+      if (offset !== undefined) {
+        sql += ' OFFSET ?'
+        params.push(offset)
+      }
+
+      return (db.prepare(sql).all(...params) as Record<string, unknown>[]).map(rowToNewsItem)
     },
 
     getRecentNews(hours: number, limit?: number, offset?: number): NewsItem[] {
@@ -98,7 +133,7 @@ export function createStorage(dbPath: string): NewsStore & ArticleCacheStore {
       const cutoffStr = cutoff.toLocaleString('sv-SE', { timeZone: 'Asia/Shanghai' }).replace('T', ' ')
 
       let sql = `
-        SELECT title, time, source, thumb, url, fallback_url, count, tags
+        SELECT title, time, source, thumb, url, fallback_url, count, tags, category
         FROM news
         WHERE time >= ?
         ORDER BY time DESC
@@ -122,7 +157,7 @@ export function createStorage(dbPath: string): NewsStore & ArticleCacheStore {
       const cutoffStr = cutoff.toLocaleString('sv-SE', { timeZone: 'Asia/Shanghai' }).replace('T', ' ')
 
       let sql = `
-        SELECT title, time, source, thumb, url, fallback_url, count, tags
+        SELECT title, time, source, thumb, url, fallback_url, count, tags, category
         FROM news
         WHERE time >= ?
         ORDER BY count DESC
@@ -199,5 +234,6 @@ function rowToNewsItem(row: Record<string, unknown>): NewsItem {
     fallbackUrl: (row.fallback_url as string) || null,
     count: (row.count as number) || 0,
     tags,
+    category: (row.category as SportCategory) || 'other',
   }
 }

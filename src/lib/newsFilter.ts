@@ -12,6 +12,9 @@ export interface RawNewsItem {
   count?: number
 }
 
+// 体育项目分类
+export type SportCategory = 'football' | 'basketball' | 'other'
+
 // 标准化后的新闻条目
 export interface NewsItem {
   title: string
@@ -22,6 +25,7 @@ export interface NewsItem {
   fallbackUrl: string | null   // 备用链接：直播吧自己的文章（国内一定能打开）
   count: number                // 热度值
   tags: string[]
+  category?: SportCategory     // 体育项目：足球 / 篮球 / 综合（可选，兼容旧数据）
 }
 
 // 从 URL 域名提取可读的来源名
@@ -65,21 +69,16 @@ function buildZhibo8Url(item: RawNewsItem): string | null {
   return item.url.startsWith('http') ? item.url : `https://news.zhibo8.com${item.url}`
 }
 
+/** 根据直播吧的 type 字段判断体育项目分类 */
+function classifyCategory(item: RawNewsItem): SportCategory {
+  const t = item.type
+  if (t === 'zuqiu') return 'football'
+  if (t === 'nba' || t === 'lanqiu') return 'basketball'
+  return 'other'
+}
+
 export function filterFootballNews(raw: RawNewsItem[]): NewsItem[] {
   return raw
-    .filter((item) => {
-      return (
-        item.type === 'zuqiu' ||
-        item.lable?.includes('足球') ||
-        item.lable?.includes('英超') ||
-        item.lable?.includes('西甲') ||
-        item.lable?.includes('德甲') ||
-        item.lable?.includes('意甲') ||
-        item.lable?.includes('法甲') ||
-        item.lable?.includes('欧冠') ||
-        item.lable?.includes('世界杯')
-      )
-    })
     .sort((a, b) => b.createtime.localeCompare(a.createtime))
     .map((item) => {
       const zhibo8Url = buildZhibo8Url(item)
@@ -102,6 +101,7 @@ export function filterFootballNews(raw: RawNewsItem[]): NewsItem[] {
         fallbackUrl: sourceUrl !== zhibo8Url ? zhibo8Url : null,
         count: item.count ?? 0,
         tags: item.lable ? item.lable.split(',') : [],
+        category: classifyCategory(item),
       }
     })
 }

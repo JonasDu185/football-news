@@ -22,8 +22,10 @@ import type { NewsItem } from './lib/newsFilter'
 import { rankFeed } from './lib/feedRanker'
 
 const TABS = [
-  { value: 'realtime', label: '实时' },
-  { value: 'hot',      label: '热点' },
+  { value: 'football',   label: '足球' },
+  { value: 'other',      label: '综合' },
+  { value: 'basketball', label: '篮球' },
+  { value: 'hot',        label: '热点' },
 ] as const
 type TabValue = (typeof TABS)[number]['value']
 const TAB_VALUES = TABS.map(t => t.value)
@@ -34,11 +36,13 @@ function tabToIndex(tab: string): number {
 }
 
 function App() {
-  // 两个独立 feed：realtime（实时新闻智能混排），hot（热点独立分页）
-  const featuredFeed = useNewsFeed('/api/news/featured', 30)
+  // 四个 feed：足球 / 综合 / 篮球 按分类，热点为全项目
+  const footballFeed = useNewsFeed('/api/news/by-category?category=football', 15)
+  const otherFeed = useNewsFeed('/api/news/by-category?category=other', 15)
+  const basketballFeed = useNewsFeed('/api/news/by-category?category=basketball', 15)
   const hotFeed = useNewsFeed('/api/news/hot')
   const [reading, setReading] = useState<NewsItem | null>(null)
-  const [activeTab, setActiveTab] = useState<TabValue>('realtime')
+  const [activeTab, setActiveTab] = useState<TabValue>('football')
   const { readUrls, markRead } = useReadHistory()
 
   // 搜索
@@ -46,12 +50,12 @@ function App() {
   const allNews = useMemo(() => {
     const seen = new Set<string>()
     const combined: NewsItem[] = []
-    for (const item of [...featuredFeed.items, ...hotFeed.items]) {
+    for (const item of [...footballFeed.items, ...otherFeed.items, ...basketballFeed.items, ...hotFeed.items]) {
       const key = item.url ?? item.title
       if (!seen.has(key)) { seen.add(key); combined.push(item) }
     }
     return combined
-  }, [featuredFeed.items, hotFeed.items])
+  }, [footballFeed.items, otherFeed.items, basketballFeed.items, hotFeed.items])
   const { query, setQuery, results } = useSearch(allNews)
 
   // 收藏
@@ -80,7 +84,7 @@ function App() {
     showToast('偏好已保存，每日消息将优先显示相关内容')
   }
 
-  // 当前页索引：0=实时, 1=热点
+  // 当前页索引：0=足球, 1=综合, 2=篮球, 3=热点
   const activeIndex = tabToIndex(activeTab)
 
   // 横滑状态
@@ -103,10 +107,14 @@ function App() {
     return () => ro.disconnect()
   }, [])
 
-  // 两个面板的滚动容器 ref
-  const panel0Ref = useRef<HTMLDivElement>(null)
-  const panel1Ref = useRef<HTMLDivElement>(null)
-  const activePanelRef = [panel0Ref, panel1Ref][activeIndex]
+  // 四个面板的滚动容器 ref
+  const panelRefs = [
+    useRef<HTMLDivElement>(null),
+    useRef<HTMLDivElement>(null),
+    useRef<HTMLDivElement>(null),
+    useRef<HTMLDivElement>(null),
+  ]
+  const activePanelRef = panelRefs[activeIndex]
   // 阅读模式滚动容器 ref（用于阅读进度条）
   const readerScrollRef = useRef<HTMLDivElement>(null)
 
@@ -190,21 +198,24 @@ function App() {
     setSwipeOffset(0)
   }, [goNext, goPrev])
 
-  // 实时新闻统一智能混排：原世界杯内容不再独立成频道，但仍保留在实时流中
-  const realtimeNews = useMemo(() => {
-    return rankFeed(featuredFeed.items, { preferences, readUrls: new Set() })
-  }, [featuredFeed.items, preferences])
+  // 足球 / 综合 / 篮球 三个分类 feed 统一智能混排
+  const footballNews = useMemo(() => {
+    return rankFeed(footballFeed.items, { preferences, readUrls: new Set() })
+  }, [footballFeed.items, preferences])
+  const otherNews = useMemo(() => {
+    return rankFeed(otherFeed.items, { preferences, readUrls: new Set() })
+  }, [otherFeed.items, preferences])
+  const basketballNews = useMemo(() => {
+    return rankFeed(basketballFeed.items, { preferences, readUrls: new Set() })
+  }, [basketballFeed.items, preferences])
 
   // 用 ref 持有 retry 函数，避免 handleRefresh 的依赖问题
-  const featuredRetryRef = useRef(featuredFeed.retry)
-  featuredRetryRef.current = featuredFeed.retry
-  const hotRetryRef = useRef(hotFeed.retry)
-  hotRetryRef.current = hotFeed.retry
+  const retryRefs = useRef<Array<() => void>>([])
+  retryRefs.current = [footballFeed.retry, otherFeed.retry, basketballFeed.retry, hotFeed.retry]
 
   const handleRefresh = useCallback(async () => {
     await fetch('/api/news/refresh', { method: 'POST' })
-    featuredRetryRef.current()
-    hotRetryRef.current()
+    retryRefs.current.forEach((r) => r())
   }, [])
 
   // 打开阅读模式
@@ -272,7 +283,7 @@ function App() {
         onTouchEnd={handleTouchEnd}
         style={{ touchAction: 'pan-y' }}
       >
-        {featuredFeed.loading ? (
+        {footballFeed.loading ? (
           <div
             className={`h-full overflow-y-auto pt-2 ${searchOpen ? 'invisible pointer-events-none' : ''}`}
             aria-hidden={searchOpen}
@@ -293,11 +304,14 @@ function App() {
             }}
           >
             <NewsPanels
-              panel0Ref={panel0Ref} panel1Ref={panel1Ref}
+              panelRefs={panelRefs}
               viewportWidth={viewportWidth} onRefresh={handleRefresh}
-              featured={{ hasMore: featuredFeed.hasMore, loadingMore: featuredFeed.loadingMore, onLoadMore: featuredFeed.loadMore, error: featuredFeed.error, onRetry: featuredFeed.retry }}
-              hot={{ hasMore: hotFeed.hasMore, loadingMore: hotFeed.loadingMore, onLoadMore: hotFeed.loadMore, error: hotFeed.error, onRetry: hotFeed.retry }}
-              realtimeNews={realtimeNews} hotNews={hotFeed.items}
+              feeds={{
+                football: { news: footballNews, hasMore: footballFeed.hasMore, loadingMore: footballFeed.loadingMore, onLoadMore: footballFeed.loadMore, error: footballFeed.error, onRetry: footballFeed.retry },
+                other: { news: otherNews, hasMore: otherFeed.hasMore, loadingMore: otherFeed.loadingMore, onLoadMore: otherFeed.loadMore, error: otherFeed.error, onRetry: otherFeed.retry },
+                basketball: { news: basketballNews, hasMore: basketballFeed.hasMore, loadingMore: basketballFeed.loadingMore, onLoadMore: basketballFeed.loadMore, error: basketballFeed.error, onRetry: basketballFeed.retry },
+                hot: { news: hotFeed.items, hasMore: hotFeed.hasMore, loadingMore: hotFeed.loadingMore, onLoadMore: hotFeed.loadMore, error: hotFeed.error, onRetry: hotFeed.retry },
+              }}
               onCardClick={openReader} readUrls={readUrls}
               bookmarkedUrls={bookmarkedUrls} onToggleBookmark={toggleBookmark}
             />
