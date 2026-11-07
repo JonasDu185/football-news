@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { appPath } from '@/lib/appPath'
 import DOMPurify from 'dompurify'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -60,7 +61,7 @@ export function ReaderView({ url, sourceUrl, sourceName, onBack, scrollContainer
 
   // 检查分享功能是否启用
   useEffect(() => {
-    fetch('/api/config')
+    fetch(appPath('api/config'))
       .then(r => r.json())
       .then(cfg => setEnableShare(cfg.enableShare))
       .catch(() => setEnableShare(false))
@@ -69,14 +70,12 @@ export function ReaderView({ url, sourceUrl, sourceName, onBack, scrollContainer
   // 分享处理：优先用 Web Share API（弹出系统分享面板），不支持时复制链接
   const handleShare = useCallback(async () => {
     // 开发环境 Vite 代理 /share，生产环境 nginx 代理 /football/share
-    const sharePath = import.meta.env.DEV
-      ? `/share?url=${encodeURIComponent(url)}`
-      : `${import.meta.env.BASE_URL}share?url=${encodeURIComponent(url)}`
+    const sharePath = `${appPath('share')}?url=${encodeURIComponent(url)}`
     const shareUrl = `${window.location.origin}${sharePath}`
-    const shareTitle = article?.title || '分享一篇足球新闻'
+    const shareTitle = article?.title || '分享一篇体育新闻'
     const shareText = article?.title
-      ? `${article.title} — 来自足球新闻`
-      : '来自足球新闻的分享'
+      ? `${article.title} — 来自体坛速递`
+      : '来自体坛速递的分享'
 
     // 尝试 Web Share API（需要 HTTPS 或 localhost）
     if (navigator.share) {
@@ -116,7 +115,7 @@ export function ReaderView({ url, sourceUrl, sourceName, onBack, scrollContainer
     setLoading(true)
     const controller = new AbortController()
 
-    fetch(`/api/news/article?url=${encodeURIComponent(url)}`, { signal: controller.signal })
+    fetch(`${appPath('api/news/article')}?url=${encodeURIComponent(url)}`, { signal: controller.signal })
       .then((r) => r.json())
       .then((data) => {
         setArticle(data)

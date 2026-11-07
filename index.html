@@ -2,14 +2,16 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" sizes="192x192" href="/football/icon-192.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/football/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="__BASE_PATH__favicon-v3.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="__BASE_PATH__icon-192-v3.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="__BASE_PATH__apple-touch-icon-v3.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0B1121" />
-    <meta name="description" content="中文足球新闻聚合 · 每日精选与热点追踪" />
-    <link rel="manifest" href="/manifest.json" />
-    <title>足球新闻</title>
-    <!-- 深色模式防闪烁：在 React 加载前读取 localStorage -->
+    <meta name="theme-color" content="__THEME_COLOR__" />
+    <meta name="application-name" content="__APP_NAME__" />
+    <meta name="apple-mobile-web-app-title" content="__APP_NAME__" />
+    <meta name="description" content="__APP_DESCRIPTION__" />
+    <link rel="manifest" href="__BASE_PATH__manifest.json" />
+    <title>__APP_NAME__</title>
     <script>
       (function() {
         var theme = localStorage.getItem('football-theme');
@@ -28,8 +30,8 @@
     <script type="module" src="/src/main.tsx"></script>
     <script>
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/football/sw.js', {
-          scope: '/football/',
+        navigator.serviceWorker.register('__BASE_PATH__sw.js', {
+          scope: '__BASE_PATH__',
         })
       }
     </script>

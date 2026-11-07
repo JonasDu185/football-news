@@ -5,6 +5,7 @@ import { NewsPanels } from './components/NewsPanels'
 import { ChannelNav } from './components/ChannelNav'
 
 import { useNewsFeed } from './hooks/useNewsFeed'
+import { appPath } from './lib/appPath'
 import { useReadHistory } from './hooks/useReadHistory'
 import { SearchBar } from './components/SearchBar'
 import { BookmarkList } from './components/BookmarkList'
@@ -36,11 +37,14 @@ function tabToIndex(tab: string): number {
 }
 
 function App() {
+  useEffect(() => {
+    document.title = import.meta.env.VITE_APP_NAME || '体坛速递'
+  }, [])
   // 四个 feed：足球 / 综合 / 篮球 按分类，热点为全项目
-  const footballFeed = useNewsFeed('/api/news/by-category?category=football', 15)
-  const otherFeed = useNewsFeed('/api/news/by-category?category=other', 15)
-  const basketballFeed = useNewsFeed('/api/news/by-category?category=basketball', 15)
-  const hotFeed = useNewsFeed('/api/news/hot')
+  const footballFeed = useNewsFeed(appPath('api/news/by-category?category=football'), 15)
+  const otherFeed = useNewsFeed(appPath('api/news/by-category?category=other'), 15)
+  const basketballFeed = useNewsFeed(appPath('api/news/by-category?category=basketball'), 15)
+  const hotFeed = useNewsFeed(appPath('api/news/hot'))
   const [reading, setReading] = useState<NewsItem | null>(null)
   const [activeTab, setActiveTab] = useState<TabValue>('football')
   const { readUrls, markRead } = useReadHistory()
@@ -214,7 +218,7 @@ function App() {
   retryRefs.current = [footballFeed.retry, otherFeed.retry, basketballFeed.retry, hotFeed.retry]
 
   const handleRefresh = useCallback(async () => {
-    await fetch('/api/news/refresh', { method: 'POST' })
+    await fetch(appPath('api/news/refresh'), { method: 'POST' })
     retryRefs.current.forEach((r) => r())
   }, [])
 
@@ -261,6 +265,11 @@ function App() {
 
   return (
     <div className="h-dvh flex flex-col bg-background max-w-md mx-auto relative">
+      {import.meta.env.VITE_APP_ENV === 'test' ? (
+        <div className="absolute top-14 right-2 z-30 rounded-full bg-[#1647E8] px-2 py-0.5 text-[10px] font-medium text-white shadow-sm pointer-events-none">
+          测试版
+        </div>
+      ) : null}
       <ChannelNav
         tabs={TABS}
         activeTab={activeTab}
