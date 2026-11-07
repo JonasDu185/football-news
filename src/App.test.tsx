@@ -37,11 +37,11 @@ beforeEach(() => {
 })
 
 describe('App', () => {
-  it('只渲染实时和热点两个 Tab', async () => {
+  it('渲染四个频道 Tab', async () => {
     render(<App />)
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: '实时' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: '足球' })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: '热点' })).toBeInTheDocument()
       expect(screen.queryByRole('button', { name: '世界杯' })).not.toBeInTheDocument()
       expect(screen.queryByRole('heading', { name: '足球志' })).not.toBeInTheDocument()
@@ -52,7 +52,7 @@ describe('App', () => {
     render(<App />)
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: '实时' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: '足球' })).toBeInTheDocument()
     })
 
     fireEvent.click(screen.getByRole('button', { name: '热点' }))
@@ -115,7 +115,7 @@ describe('App', () => {
     render(<App />)
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: '实时' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: '足球' })).toBeInTheDocument()
     })
 
     // 打开抽屉

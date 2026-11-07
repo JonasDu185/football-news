@@ -41,11 +41,11 @@ export function renderArticlePage(params: SharePageParams): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${escapeHtml(title)} - 足球新闻</title>
+  <title>${escapeHtml(title)} - 体坛速递</title>
   <meta name="description" content="${escapeHtml(title)}">
   <meta property="og:title" content="${escapeHtml(title)}">
   <meta property="og:type" content="article">
-  <meta property="og:description" content="来自足球新闻的分享">
+  <meta property="og:description" content="来自体坛速递的分享">
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     body {
@@ -157,7 +157,7 @@ export function renderArticlePage(params: SharePageParams): string {
       <path d="M12 2a14.5 14.5 0 0 1 0 20"/>
       <path d="M2 12h20"/>
     </svg>
-    足球新闻 · 更纯粹的足球资讯
+    体坛速递 · 中文体育新闻聚合
   </div>
   <div class="container">
     <div class="card">
@@ -165,7 +165,7 @@ export function renderArticlePage(params: SharePageParams): string {
       <div class="content">${finalContent}</div>
       <a class="source-link" href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener noreferrer">查看原文 →</a>
     </div>
-    <div class="footer">由 足球新闻 提供</div>
+    <div class="footer">由 体坛速递 提供</div>
   </div>
 </body>
 </html>`
@@ -178,7 +178,7 @@ export function renderErrorPage(errorMsg: string, fallbackUrl?: string): string 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>无法加载 - 足球新闻</title>
+  <title>无法加载 - 体坛速递</title>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     body {
@@ -218,7 +218,7 @@ export function renderErrorPage(errorMsg: string, fallbackUrl?: string): string 
     <h1>${escapeHtml(errorMsg)}</h1>
     <p>文章可能已被删除或暂时无法访问</p>
     ${fallbackUrl ? `<a href="${escapeHtml(fallbackUrl)}" target="_blank" rel="noopener noreferrer">在浏览器中打开原文 →</a>` : ''}
-    <p style="margin-top:20px;font-size:12px;color:#bbb;">由 足球新闻 提供</p>
+    <p style="margin-top:20px;font-size:12px;color:#bbb;">由 体坛速递 提供</p>
   </div>
 </body>
 </html>`

@@ -2,11 +2,13 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
+import { brandPlugin, brandConfig } from './vite.brand.ts'
 
-// https://vite.dev/config/
+const cfg = brandConfig()
+
 export default defineConfig({
-  base: '/football/',
-  plugins: [react(), tailwindcss()],
+  base: cfg.basePath,
+  plugins: [react(), tailwindcss(), brandPlugin()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

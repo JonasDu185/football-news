@@ -119,7 +119,11 @@ if (process.env.ENABLE_SHARE === 'true') {
 
 // 前端配置接口（功能开关等）
 app.get('/api/config', (_req, res) => {
-  res.json({ enableShare: process.env.ENABLE_SHARE === 'true' })
+  res.json({
+    enableShare: process.env.ENABLE_SHARE === 'true',
+    appEnv: process.env.APP_ENV || 'production',
+    appName: process.env.APP_ENV === 'test' ? '体坛速递 测试' : '体坛速递',
+  })
 })
 
 // ===== 生产环境托管前端静态文件 =====
