@@ -25,3 +25,11 @@ dist-ssr
 
 # Database
 data/
+
+# 本机工具、凭据与生成物（2026-11-07）
+.env*
+!.env.example
+.claude/
+.agents/
+.codex/
+.workbuddy/
